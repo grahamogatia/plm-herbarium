@@ -1,5 +1,3 @@
-import React from "react";
-
 interface FullScreenProps {
   title: string;
   children: React.ReactNode;
@@ -9,7 +7,7 @@ interface FullScreenProps {
 function FullScreen({ children, className = "" }: FullScreenProps) {
   return (
     <div
-      className={`w-screen h-dvh min-h-dvh flex items-center justify-center border ${className}`}
+      className={`w-screen h-dvh min-h-dvh flex justify-center border ${className}`}
     >
       {children}
     </div>
