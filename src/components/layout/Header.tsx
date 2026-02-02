@@ -9,14 +9,14 @@ function Header() {
           <div className="text-lg font-semibold">PLM Botanical Herbarium</div>
         </div>
         <div className="text-lg leading-none">|</div>
-        <nav className="flex items-center gap-6 text-sm font-medium text-gray-600">
-          <a className="hover:text-gray-900" href="#welcome">
+        <nav className="flex items-center gap-6 text-sm font-medium">
+          <a className="hover:text-gray-900">
             Home
           </a>
-          <a className="hover:text-gray-900" href="#statistics">
+          <a className="hover:text-gray-900">
             Statistics
           </a>
-          <a className="hover:text-gray-900" href="#about">
+          <a className="hover:text-gray-900" >
             Collection
           </a>
         </nav>

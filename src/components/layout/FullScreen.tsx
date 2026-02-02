@@ -2,16 +2,28 @@ interface FullScreenProps {
   title: string;
   children: React.ReactNode;
   className?: string;
+  background?: string;
 }
 
-function FullScreen({ children, className = "" }: FullScreenProps) {
+function FullScreen({
+  children,
+  className = "",
+  background,
+}: FullScreenProps) {
   return (
     <div
-      className={`w-screen h-dvh min-h-dvh flex justify-center ${className}`}
+      style={
+        background
+          ? { backgroundImage: `url(${background})` }
+          : undefined
+      }
+      className={`w-screen min-h-[calc(100dvh-56px)]
+      flex items-center justify-center bg-cover bg-center bg-no-repeat ${className}`}
     >
       {children}
     </div>
   );
 }
+
 
 export default FullScreen;

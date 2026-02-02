@@ -4,10 +4,14 @@ import Home from "./pages/Home";
 
 function App() {
   return (
-    <>
-      <Header />
-      <Home />
-    </>
+    <div>
+      <div className="flex flex-col min-h-dvh">
+        <Header />
+        <main>
+          <Home />
+        </main>
+      </div>
+    </div>
   );
 }
 
