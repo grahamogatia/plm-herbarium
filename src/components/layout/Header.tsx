@@ -2,7 +2,7 @@ import { Leaf } from "lucide-react";
 
 function Header() {
   return (
-    <header className="sticky top-0 z-50 w-full h-14 px-6 flex items-center justify-start border-b bg-white">
+    <header className="sticky top-0 z-50 w-full h-14 px-6 flex items-center justify-start bg-white">
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <Leaf className="h-5 w-5" />

@@ -7,7 +7,7 @@ interface FullScreenProps {
 function FullScreen({ children, className = "" }: FullScreenProps) {
   return (
     <div
-      className={`w-screen h-dvh min-h-dvh flex justify-center border ${className}`}
+      className={`w-screen h-dvh min-h-dvh flex justify-center ${className}`}
     >
       {children}
     </div>
