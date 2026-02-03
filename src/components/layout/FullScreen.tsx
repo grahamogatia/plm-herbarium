@@ -18,7 +18,7 @@ function FullScreen({
           : undefined
       }
       className={`w-screen min-h-[calc(100dvh-56px)]
-      flex items-center justify-center bg-cover bg-center bg-no-repeat ${className}`}
+      flex  bg-cover bg-center bg-no-repeat ${className}`}
     >
       {children}
     </div>
