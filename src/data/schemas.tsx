@@ -1,0 +1,48 @@
+import { z } from "zod";
+
+export const SpecimenSchema = z.object({
+  specimen_id: z.number(),
+  accesssion_no: z.string(),
+
+  species_id: z.number(), //FK
+  collector_id: z.number(), //FK
+  location_id: z.number(), //FK
+
+  date_collected: z.date(),
+  habitat: z.string(),
+  habit: z.enum(["tree", "shrub", "herb", "vine", "epiphyte"]),
+  
+  altitude_masl: z.float64(),
+  plant_height_m: z.float64(),
+  dbh_cm: z.float64(),
+
+  flower_description: z.string().optional(),
+  fruit_description: z.string().optional(),
+  leaf_description: z.string().optional(),
+
+  conservation_status: z.enum(["EX", "EW", "CE", "EN", "VU", "NT", "LC"]),
+  nativity: z.enum(["Native", "Introduced", "Endemic"]),
+  
+  notes: z.string(),
+});
+
+export const SpeciesSchema = z.object({
+  species_id: z.number(),
+  family: z.string(),
+  scientific_name: z.string(),
+  common_name: z.string().optional(),
+});
+
+export const CollectorSchema = z.object({
+  collector_id: z.number(),
+  name: z.string(),
+});
+
+export const LocationSchema = z.object({
+  location_id: z.number(),
+  locality: z.string(),
+  province: z.string(),
+  region: z.string(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+});

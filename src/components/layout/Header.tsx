@@ -1,7 +1,17 @@
 import { Leaf } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { seedFirestore } from "@/api/seed";
 
 function Header() {
+  const handleSeedFirestore = async () => {
+    try {
+      await seedFirestore();
+      console.info("Firestore seeding complete.");
+    } catch (error) {
+      console.error("Failed to seed Firestore:", error);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full h-14 px-6 flex items-center justify-between bg-white">
       <div className="flex items-center gap-4">
@@ -22,7 +32,9 @@ function Header() {
           </a>
         </nav>
       </div>
-      <Button className="bg-lime-800 text-zinc-50">Login</Button>
+      <Button className="bg-lime-800 text-zinc-50" onClick={handleSeedFirestore}>
+        Seed Firestore
+      </Button>
     </header>
   );
 }

@@ -8,6 +8,7 @@ function Home() {
       <HeroSection />
       <StatisticsSection />
       <AboutUsSection />
+      
     </div>
   );
 }
