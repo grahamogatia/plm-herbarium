@@ -12,9 +12,9 @@ export const SpecimenSchema = z.object({
   habitat: z.string(),
   habit: z.enum(["tree", "shrub", "herb", "vine", "epiphyte"]),
   
-  altitude_masl: z.float64(),
-  plant_height_m: z.float64(),
-  dbh_cm: z.float64(),
+  altitude_masl: z.number(),
+  plant_height_m: z.number(),
+  dbh_cm: z.number(),
 
   flower_description: z.string().optional(),
   fruit_description: z.string().optional(),
