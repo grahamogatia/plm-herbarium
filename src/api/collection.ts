@@ -4,6 +4,7 @@ import { db } from "@/api/database";
 export type CollectionRow = {
   specimenId: number;
   accessionNo: string;
+  photoUrl?: string;
   taxon: string;
   family: string;
   collector: string;
@@ -30,6 +31,7 @@ type LocationDoc = {
 type SpecimenDoc = {
   specimen_id: number;
   accesssion_no?: string;
+  photo_url?: string;
   species_id: number;
   collector_id: number;
   location_id: number;
@@ -102,6 +104,7 @@ export async function getCollectionRows(): Promise<CollectionRow[]> {
     return {
       specimenId: specimen.specimen_id,
       accessionNo: specimen.accesssion_no ?? "-",
+      photoUrl: specimen.photo_url,
       taxon: species?.scientific_name ?? "Unknown species",
       family: species?.family ?? "Unknown family",
       collector: collector?.name ?? "Unknown collector",

@@ -1,23 +1,10 @@
-import { DataTable } from "@/components/ui/datatable";
-import {
-  Combobox,
-  ComboboxChip,
-  ComboboxChips,
-  ComboboxChipsInput,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxItem,
-  ComboboxList,
-  ComboboxValue,
-  useComboboxAnchor,
-} from "@/components/ui/combobox";
-import { Input } from "@/components/ui/input";
-import { specimenColumns } from "@/data/columns";
+import CollectionFilters from "@/components/pages/collection/CollectionFilters";
+import CollectionHeader from "@/components/pages/collection/CollectionHeader";
+import CollectionResults from "@/components/pages/collection/CollectionTableView";
+import CollectionGalleryView from "@/components/pages/collection/CollectionGalleryView";
 import { getCollectionRows, type CollectionRow } from "@/api/collection";
-import * as React from "react";
 import { useEffect, useState } from "react";
-import { Search } from "lucide-react";
-import { TypographyH2 } from "@/components/ui/typography/typographyH2";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 function Collection() {
   const [rows, setRows] = useState<CollectionRow[]>([]);
@@ -25,13 +12,33 @@ function Collection() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFamilies, setSelectedFamilies] = useState<string[]>([]);
-  const familyAnchor = useComboboxAnchor();
+  const [viewMode, setViewMode] = useState<"table" | "gallery">("table");
 
-  const familyOptions = Array.from(new Set(rows.map((row) => row.family))).sort();
+  const familyOptions = Array.from(
+    new Set(rows.map((row) => row.family)),
+  ).sort();
   const filteredRows =
     selectedFamilies.length === 0
       ? rows
       : rows.filter((row) => selectedFamilies.includes(row.family));
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const galleryRows =
+    normalizedSearch.length === 0
+      ? filteredRows
+      : filteredRows.filter((row) => {
+          const haystack = [
+            row.taxon,
+            row.family,
+            row.collector,
+            row.accessionNo,
+            row.locality,
+            row.date,
+          ]
+            .join(" ")
+            .toLowerCase();
+
+          return haystack.includes(normalizedSearch);
+        });
 
   useEffect(() => {
     let isMounted = true;
@@ -64,76 +71,45 @@ function Collection() {
 
   return (
     <>
-      <div className="bg-lime-800 text-zinc-50 p-4 w-full">
-        <div className="grid gap-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-6">
-          <div className="sm:justify-self-start">
-            <TypographyH2>Collection</TypographyH2>
-          </div>
-          <div className="grid w-full gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] sm:items-center sm:justify-self-end">
-            <div className="relative w-full">
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
-                aria-hidden="true"
-              />
-              <Input
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search collection..."
-                className="h-10 w-full border-lime-200/60 bg-white pr-3 pl-9 text-sm text-zinc-900 placeholder:text-zinc-500 focus-visible:ring-lime-200"
-                aria-label="Search collection"
-              />
-            </div>
-            <Combobox
-              multiple
-              autoHighlight
-              items={familyOptions}
-              value={selectedFamilies}
-              onValueChange={(values) => setSelectedFamilies(values as string[])}
-            >
-              <ComboboxChips
-                ref={familyAnchor}
-                className="w-full overflow-x-auto rounded-md border-lime-200/60 bg-white text-zinc-900 flex-nowrap!"
-                aria-label="Filter by family"
-              >
-                <ComboboxValue>
-                  {(values) => (
-                    <React.Fragment>
-                      {values.map((value: string) => (
-                        <ComboboxChip key={value}>{value}</ComboboxChip>
-                      ))}
-                      <ComboboxChipsInput placeholder="Filter families" />
-                    </React.Fragment>
-                  )}
-                </ComboboxValue>
-              </ComboboxChips>
-              <ComboboxContent anchor={familyAnchor}>
-                <ComboboxEmpty>No families found.</ComboboxEmpty>
-                <ComboboxList>
-                  {(item) => (
-                    <ComboboxItem key={item} value={item}>
-                      {item}
-                    </ComboboxItem>
-                  )}
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
+      <div className="bg-lime-800 p-4 w-full">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+          <CollectionHeader />
+          <div className="w-full sm:flex-1">
+            <CollectionFilters
+              searchQuery={searchQuery}
+              onSearchQueryChange={setSearchQuery}
+              familyOptions={familyOptions}
+              selectedFamilies={selectedFamilies}
+              onSelectedFamiliesChange={setSelectedFamilies}
+            />
           </div>
         </div>
       </div>
-      <div className=" bg-white text-zinc-900 rounded-lg p-4">
-        {isLoading ? (
-          <p className="text-sm text-zinc-600">Loading collection data...</p>
-        ) : errorMessage ? (
-          <p className="text-sm text-red-600">{errorMessage}</p>
-        ) : (
-          <DataTable
-            columns={specimenColumns}
-            data={filteredRows}
-            globalFilter={searchQuery}
-            onGlobalFilterChange={setSearchQuery}
-          />
-        )}
-      </div>
+      <Tabs
+            value={viewMode}
+            onValueChange={(value) => setViewMode(value as "table" | "gallery")}
+            className="pl-4 pt-4 pb-2"
+          >
+            <TabsList variant="line">
+              <TabsTrigger value="table">Table</TabsTrigger>
+              <TabsTrigger value="gallery">Gallery</TabsTrigger>
+            </TabsList>
+          </Tabs>
+      {viewMode === "table" ? (
+        <CollectionResults
+          isLoading={isLoading}
+          errorMessage={errorMessage}
+          rows={filteredRows}
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+        />
+      ) : (
+        <CollectionGalleryView
+          isLoading={isLoading}
+          errorMessage={errorMessage}
+          rows={galleryRows}
+        />
+      )}
     </>
   );
 }
