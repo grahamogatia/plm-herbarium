@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ImageOff } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 type CollectionGalleryViewProps = {
   isLoading: boolean;
@@ -17,6 +18,7 @@ function CollectionGalleryView({
   errorMessage,
   rows,
 }: CollectionGalleryViewProps) {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
 
   const totalPages = Math.max(1, Math.ceil(rows.length / ITEMS_PER_PAGE));
@@ -51,7 +53,25 @@ function CollectionGalleryView({
         <>
           <div className="grid justify-start gap-2 grid-cols-[repeat(auto-fit,15rem)]">
             {pagedRows.map((row) => (
-              <Card key={row.specimenId} className="overflow-hidden p-0 gap-0 w-60 h-84">
+              <Card
+                key={row.specimenId}
+                className="overflow-hidden p-0 gap-0 w-60 h-84 cursor-pointer transition hover:shadow-md"
+                role="button"
+                tabIndex={0}
+                onClick={() =>
+                  navigate(`../collections/${encodeURIComponent(row.accessionNo)}`, {
+                    state: { row },
+                  })
+                }
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    navigate(`../collections/${encodeURIComponent(row.accessionNo)}`, {
+                      state: { row },
+                    });
+                  }
+                }}
+              >
                 <div className="h-[70%] w-full bg-zinc-100 flex items-center justify-center border-b border-zinc-200">
                   {row.photoUrl ? (
                     <img

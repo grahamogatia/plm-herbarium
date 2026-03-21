@@ -1,6 +1,7 @@
 import { DataTable } from "@/components/ui/datatable";
 import type { CollectionRow } from "@/api/collection";
 import { specimenColumns } from "@/data/columns";
+import { useNavigate } from "react-router-dom";
 
 type CollectionResultsProps = {
   isLoading: boolean;
@@ -17,6 +18,8 @@ function CollectionResults({
   searchQuery,
   onSearchQueryChange,
 }: CollectionResultsProps) {
+  const navigate = useNavigate();
+
   return (
     <div className="bg-white text-zinc-900 rounded-lg p-4">
       {isLoading ? (
@@ -29,6 +32,11 @@ function CollectionResults({
           data={rows}
           globalFilter={searchQuery}
           onGlobalFilterChange={onSearchQueryChange}
+          onRowClick={(row) =>
+            navigate(`../collections/${encodeURIComponent(row.accessionNo)}`, {
+              state: { row },
+            })
+          }
         />
       )}
     </div>

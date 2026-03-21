@@ -23,6 +23,7 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   globalFilter?: string;
   onGlobalFilterChange?: (value: string) => void;
+  onRowClick?: (row: TData) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -30,6 +31,7 @@ export function DataTable<TData, TValue>({
   data,
   globalFilter,
   onGlobalFilterChange,
+  onRowClick,
 }: DataTableProps<TData, TValue>) {
   const [internalGlobalFilter, setInternalGlobalFilter] = useState("");
   const filterValue = globalFilter ?? internalGlobalFilter;
@@ -75,6 +77,8 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className={onRowClick ? "cursor-pointer" : undefined}
+                  onClick={onRowClick ? () => onRowClick(row.original) : undefined}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
