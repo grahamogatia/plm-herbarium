@@ -1,12 +1,11 @@
 import { Leaf } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
-type HeaderProps = {
-  onNavigate: (page: "home" | "collection") => void;
-  activePage: "home" | "collection";
-};
+function Header() {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-function Header({ onNavigate, activePage }: HeaderProps) {
   const navButtonClass = (isActive: boolean) =>
     `cursor-pointer transition-colors underline-offset-4 ${
       isActive
@@ -14,22 +13,25 @@ function Header({ onNavigate, activePage }: HeaderProps) {
         : "text-zinc-700 hover:text-gray-900 hover:underline"
     }`;
 
+  const isHomePage = location.pathname === "/home" || location.pathname === "/";
+  const isCollectionPage = location.pathname === "/collections";
+
   return (
     <header className="sticky top-0 z-50 w-full h-14 px-6 flex items-center justify-between bg-white">
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/home")}>
           <Leaf className="h-5 w-5" />
           <div className="text-lg font-semibold">PLM Botanical Herbarium</div>
         </div>
         <div className="text-lg leading-none text-zinc-400">|</div>
         <nav className="flex items-center gap-6 text-sm font-medium">
-          <button className={navButtonClass(activePage === "home")} onClick={() => onNavigate("home")}>
+          <button className={navButtonClass(isHomePage)} onClick={() => navigate("/home")}>
             Home
           </button>
-          <button className={navButtonClass(false)} onClick={() => onNavigate("home")}>
+          <button className={navButtonClass(isHomePage)} onClick={() => navigate("/home")}>
             Statistics
           </button>
-          <button className={navButtonClass(activePage === "collection")} onClick={() => onNavigate("collection")}>
+          <button className={navButtonClass(isCollectionPage)} onClick={() => navigate("/collections")}>
             Collection
           </button>
         </nav>
