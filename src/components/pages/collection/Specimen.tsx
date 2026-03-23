@@ -5,6 +5,7 @@ import {
   getLocationByLocationId,
   type CollectionRow,
 } from "@/api/collection";
+import { useQuery } from "@tanstack/react-query";
 import Locality from "@/components/pages/collection/Locality";
 import Summary from "@/components/pages/collection/Summary";
 import TaxonClassification from "@/components/pages/collection/TaxonClassification";
@@ -12,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TypographyH2 } from "@/components/ui/typography/typographyH2";
 import type { Specimen, Species, Collector, Location } from "@/data/types";
 import { ImageOff } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useLocation, useParams } from "react-router-dom";
 
 function CollectionDetails() {
@@ -28,63 +29,45 @@ function CollectionDetails() {
   const taxonFromRoute =
     routeRow?.accessionNo === decodedAccessionNo ? routeRow.taxon : null;
 
-  const [specimen, setSpecimen] = useState<Specimen | null>(null);
-  const [species, setSpecies] = useState<Species | null>(null);
-  const [collector, setCollector] = useState<Collector | null>(null);
-  const [specimenLocation, setSpecimenLocation] = useState<Location | null>(
-    null,
-  );
+  const { data } = useQuery<{
+    specimen: Specimen | null;
+    species: Species | null;
+    collector: Collector | null;
+    specimenLocation: Location | null;
+  }>({
+    queryKey: ["specimen-details", decodedAccessionNo],
+    enabled: Boolean(decodedAccessionNo),
+    queryFn: async () => {
+      const specimen = await getSpecimenByAccession(decodedAccessionNo);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadSpecimen = async () => {
-      try {
-        const data = await getSpecimenByAccession(decodedAccessionNo);
-        if (isMounted) {
-          setSpecimen(data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch collection details:", error);
+      if (!specimen) {
+        return {
+          specimen: null,
+          species: null,
+          collector: null,
+          specimenLocation: null,
+        };
       }
-    };
 
-    loadSpecimen();
+      const [species, collector, specimenLocation] = await Promise.all([
+        getSpeciesBySpeciesId(specimen.species_id),
+        getCollectorByCollectorId(specimen.collector_id),
+        getLocationByLocationId(specimen.location_id),
+      ]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [decodedAccessionNo]);
+      return {
+        specimen,
+        species,
+        collector,
+        specimenLocation,
+      };
+    },
+  });
 
-  useEffect(() => {
-    if (!specimen) return;
-
-    let isMounted = true;
-
-    const loadRelatedData = async () => {
-      try {
-        const [speciesData, collectorData, locationData] = await Promise.all([
-          getSpeciesBySpeciesId(specimen.species_id),
-          getCollectorByCollectorId(specimen.collector_id),
-          getLocationByLocationId(specimen.location_id),
-        ]);
-
-        if (isMounted) {
-          setSpecies(speciesData);
-          setCollector(collectorData);
-          setSpecimenLocation(locationData);
-        }
-      } catch (error) {
-        console.error("Failed to fetch related data:", error);
-      }
-    };
-
-    loadRelatedData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [specimen]);
+  const specimen = data?.specimen ?? null;
+  const species = data?.species ?? null;
+  const collector = data?.collector ?? null;
+  const specimenLocation = data?.specimenLocation ?? null;
 
   const formattedDateCollected = specimen?.date_collected
     ? new Intl.DateTimeFormat("en-GB", {
