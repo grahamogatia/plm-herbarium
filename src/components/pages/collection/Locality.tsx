@@ -27,15 +27,18 @@ function Locality({ specimenLocation, specimen }: LocalityProps) {
   return (
     <div className="flex flex-col gap-2">
       <LabelDesc label="Country">
-        <span>{specimenLocation?.locality ?? "Loading..."}</span>
+        <span>Lorem Ipsum</span>
       </LabelDesc>
 
       <LabelDesc label="Region">
+        <span>{specimenLocation?.region ?? "Loading..."}</span>
+      </LabelDesc>
+      <LabelDesc label="Province">
         <span>{specimenLocation?.province ?? "Loading..."}</span>
       </LabelDesc>
 
       <LabelDesc label="City">
-        <span>{specimenLocation?.region ?? "Loading..."}</span>
+        <span>{specimenLocation?.locality ?? "Loading..."}</span>
       </LabelDesc>
 
       <LabelDesc label="Altitude above sea level">
