@@ -1,5 +1,7 @@
 import { collection, getDocs, limit, query, where } from "firebase/firestore";
 import { db } from "@/api/database";
+import { SpecimenSchema } from "@/data/schemas";
+import type { Specimen, Species, Collector, Location } from "@/data/types";
 
 const COLLECTION_ROWS_CACHE_TTL_MS = 5 * 60 * 1000;
 let collectionRowsCache: CollectionRow[] | null = null;
@@ -208,4 +210,108 @@ export async function getCollectionRowByAccession(
   const location = locationSnapshot.docs.at(0)?.data() as LocationDoc | undefined;
 
   return mapSpecimenToRow(specimen, species, collector, location);
+}
+
+function normalizeSpecimenDocForSchema(specimen: SpecimenDoc): unknown {
+  const normalizedDate =
+    specimen.date_collected &&
+    typeof specimen.date_collected === "object" &&
+    "toDate" in specimen.date_collected
+      ? (specimen.date_collected as { toDate: () => Date }).toDate()
+      : specimen.date_collected;
+
+  return {
+    ...specimen,
+    date_collected: normalizedDate,
+  };
+}
+
+export async function getSpecimenByAccession(
+  accessionNo: string,
+): Promise<Specimen | null> {
+  const normalizedAccessionNo = accessionNo.trim();
+  if (!normalizedAccessionNo) {
+    return null;
+  }
+
+  const specimenSnapshot = await getDocs(
+    query(
+      collection(db, "specimens"),
+      where("accesssion_no", "==", normalizedAccessionNo),
+      limit(1),
+    ),
+  );
+
+  const specimenDoc = specimenSnapshot.docs.at(0);
+  if (!specimenDoc) {
+    return null;
+  }
+
+  const rawSpecimen = specimenDoc.data() as SpecimenDoc;
+  const parsedSpecimen = SpecimenSchema.safeParse(
+    normalizeSpecimenDocForSchema(rawSpecimen),
+  );
+
+  if (!parsedSpecimen.success) {
+    throw new Error("Specimen record does not match SpecimenSchema.");
+  }
+
+  return parsedSpecimen.data;
+}
+
+export async function getSpeciesBySpeciesId(
+  speciesId: number,
+): Promise<Species | null> {
+  const speciesSnapshot = await getDocs(
+    query(
+      collection(db, "species"),
+      where("species_id", "==", speciesId),
+      limit(1),
+    ),
+  );
+
+  const speciesDoc = speciesSnapshot.docs.at(0);
+  if (!speciesDoc) {
+    return null;
+  }
+
+  return speciesDoc.data() as Species;
+}
+
+export async function getCollectorByCollectorId(
+  collectorId: number,
+): Promise<Collector | null> {
+  const collectorSnapshot = await getDocs(
+    query(
+      collection(db, "collectors"),
+      where("collector_id", "==", collectorId),
+      limit(1),
+    ),
+  );
+
+  const collectorDoc = collectorSnapshot.docs.at(0);
+  if (!collectorDoc) {
+    return null;
+  }
+
+  return collectorDoc.data() as Collector;
+}
+
+export async function getLocationByLocationId(
+  locationId: number,
+): Promise<Location | null> {
+  const locationSnapshot = await getDocs(
+    query(
+      collection(db, "locations"),
+      where("location_id", "==", locationId),
+      limit(1),
+    ),
+  );
+
+  const locationDoc = locationSnapshot.docs.at(0);
+  if (!locationDoc) {
+    return null;
+  }
+
+  return locationDoc.data() as Location;
 }

@@ -1,7 +1,7 @@
 import CollectionFilters from "@/components/pages/collection/CollectionFilters";
 import CollectionHeader from "@/components/pages/collection/CollectionHeader";
-import CollectionResults from "@/components/pages/collection/CollectionTableView";
-import CollectionGalleryView from "@/components/pages/collection/CollectionGalleryView";
+import CollectionResults from "@/components/pages/collection/TableView";
+import CollectionGalleryView from "@/components/pages/collection/GalleryView";
 import { getCollectionRows, type CollectionRow } from "@/api/collection";
 import { useEffect, useMemo, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";

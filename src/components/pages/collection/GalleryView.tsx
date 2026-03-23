@@ -5,7 +5,7 @@ import { ImageOff } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-type CollectionGalleryViewProps = {
+type GalleryViewProps = {
   isLoading: boolean;
   errorMessage: string | null;
   rows: CollectionRow[];
@@ -13,11 +13,11 @@ type CollectionGalleryViewProps = {
 
 const ITEMS_PER_PAGE = 4;
 
-function CollectionGalleryView({
+function GalleryView({
   isLoading,
   errorMessage,
   rows,
-}: CollectionGalleryViewProps) {
+}: GalleryViewProps) {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
 
@@ -123,4 +123,4 @@ function CollectionGalleryView({
   );
 }
 
-export default CollectionGalleryView;
+export default GalleryView;

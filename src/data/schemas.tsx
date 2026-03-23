@@ -14,7 +14,7 @@ export const SpecimenSchema = z.object({
   
   altitude_masl: z.number(),
   plant_height_m: z.number(),
-  dbh_cm: z.number(),
+  dbh_cm: z.number().nullable(),
 
   flower_description: z.string().optional(),
   fruit_description: z.string().optional(),

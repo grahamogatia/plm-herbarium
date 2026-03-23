@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Header from "./components/layout/Header";
 import Home from "./pages/Home";
 import Collection from "./pages/Collection";
-import CollectionDetails from "./pages/CollectionDetails.tsx";
+import CollectionDetails from "./components/pages/collection/Specimen.tsx";
 
 function App() {
   return (
