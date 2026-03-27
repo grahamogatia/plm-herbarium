@@ -40,7 +40,7 @@ type SpecimenDoc = {
   accesssion_no?: string;
   photo_url?: string;
   species_id: number;
-  collector_id: number;
+  collector_ids: number[];
   location_id: number;
   date_collected?: unknown;
 };
@@ -48,7 +48,7 @@ type SpecimenDoc = {
 function mapSpecimenToRow(
   specimen: SpecimenDoc,
   species?: SpeciesDoc,
-  collector?: CollectorDoc,
+  collectors: CollectorDoc[] = [],
   location?: LocationDoc,
 ): CollectionRow {
   return {
@@ -57,7 +57,10 @@ function mapSpecimenToRow(
     photoUrl: specimen.photo_url,
     taxon: species?.scientific_name ?? "Unknown species",
     family: species?.family ?? "Unknown family",
-    collector: collector?.name ?? "Unknown collector",
+    collector:
+      collectors.length > 0
+        ? collectors.map((collector) => collector.name).join(", ")
+        : "Unknown collector",
     date: formatDate(specimen.date_collected),
     locality: location?.locality ?? "Unknown locality",
   };
@@ -137,10 +140,12 @@ export async function getCollectionRows(): Promise<CollectionRow[]> {
     const rows = specimensSnapshot.docs.map((doc) => {
       const specimen = doc.data() as SpecimenDoc;
       const species = speciesById.get(specimen.species_id);
-      const collector = collectorsById.get(specimen.collector_id);
+      const collectors = (specimen.collector_ids ?? [])
+        .map((collectorId) => collectorsById.get(collectorId))
+        .filter((collector): collector is CollectorDoc => Boolean(collector));
       const location = locationsById.get(specimen.location_id);
 
-      return mapSpecimenToRow(specimen, species, collector, location);
+      return mapSpecimenToRow(specimen, species, collectors, location);
     });
 
     rows.sort((a, b) => a.specimenId - b.specimenId);
@@ -181,18 +186,11 @@ export async function getCollectionRowByAccession(
 
   const specimen = specimenDoc.data() as SpecimenDoc;
 
-  const [speciesSnapshot, collectorSnapshot, locationSnapshot] = await Promise.all([
+  const [speciesSnapshot, locationSnapshot, collectors] = await Promise.all([
     getDocs(
       query(
         collection(db, "species"),
         where("species_id", "==", specimen.species_id),
-        limit(1),
-      ),
-    ),
-    getDocs(
-      query(
-        collection(db, "collectors"),
-        where("collector_id", "==", specimen.collector_id),
         limit(1),
       ),
     ),
@@ -203,13 +201,13 @@ export async function getCollectionRowByAccession(
         limit(1),
       ),
     ),
+    getCollectorsByCollectorIds(specimen.collector_ids ?? []),
   ]);
 
   const species = speciesSnapshot.docs.at(0)?.data() as SpeciesDoc | undefined;
-  const collector = collectorSnapshot.docs.at(0)?.data() as CollectorDoc | undefined;
   const location = locationSnapshot.docs.at(0)?.data() as LocationDoc | undefined;
 
-  return mapSpecimenToRow(specimen, species, collector, location);
+  return mapSpecimenToRow(specimen, species, collectors, location);
 }
 
 function normalizeSpecimenDocForSchema(specimen: SpecimenDoc): unknown {
@@ -295,6 +293,44 @@ export async function getCollectorByCollectorId(
   }
 
   return collectorDoc.data() as Collector;
+}
+
+export async function getCollectorsByCollectorIds(
+  collectorIds: number[],
+): Promise<Collector[]> {
+  if (collectorIds.length === 0) {
+    return [];
+  }
+
+  const uniqueCollectorIds = Array.from(new Set(collectorIds));
+
+  const chunks: number[][] = [];
+  for (let index = 0; index < uniqueCollectorIds.length; index += 10) {
+    chunks.push(uniqueCollectorIds.slice(index, index + 10));
+  }
+
+  const snapshots = await Promise.all(
+    chunks.map((chunk) =>
+      getDocs(
+        query(
+          collection(db, "collectors"),
+          where("collector_id", "in", chunk),
+        ),
+      ),
+    ),
+  );
+
+  const collectors = snapshots.flatMap((snapshot) =>
+    snapshot.docs.map((doc) => doc.data() as Collector),
+  );
+
+  const collectorsById = new Map(
+    collectors.map((collector) => [collector.collector_id, collector]),
+  );
+
+  return uniqueCollectorIds
+    .map((collectorId) => collectorsById.get(collectorId))
+    .filter((collector): collector is Collector => Boolean(collector));
 }
 
 export async function getLocationByLocationId(

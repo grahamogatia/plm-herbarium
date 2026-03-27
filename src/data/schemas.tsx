@@ -5,7 +5,7 @@ export const SpecimenSchema = z.object({
   accesssion_no: z.string(),
 
   species_id: z.number(), //FK
-  collector_id: z.number(), //FK
+  collector_ids: z.array(z.number()).min(1), //FK
   location_id: z.number(), //FK
 
   date_collected: z.date(),

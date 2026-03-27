@@ -3,7 +3,7 @@ import type { Collector, Location, Species, Specimen } from "@/data/types";
 
 type SummaryProps = {
 	species: Species | null;
-	collector: Collector | null;
+	collectors: Collector[];
 	specimenLocation: Location | null;
 	specimen: Specimen | null;
 	formattedDateCollected: string;
@@ -11,11 +11,16 @@ type SummaryProps = {
 
 function Summary({
 	species,
-	collector,
+	collectors,
 	specimenLocation,
 	specimen,
 	formattedDateCollected,
 }: SummaryProps) {
+	const collectorsLabel =
+		collectors.length > 0
+			? collectors.map((collector) => collector.name).join(", ")
+			: "Loading...";
+
 	return (
 		<div className="flex flex-col gap-2">
 			<LabelDesc label="Filed as">
@@ -23,7 +28,7 @@ function Summary({
 				<span className="italic">{species?.scientific_name ?? "Loading..."}.</span>
 			</LabelDesc>
 			<LabelDesc label="Collector(s)">
-				<span>{collector?.name ?? "Loading..."}</span>
+				<span>{collectorsLabel}</span>
 			</LabelDesc>
 			<LabelDesc label="Date Collected">
 				<span>{formattedDateCollected}</span>

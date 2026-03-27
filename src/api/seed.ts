@@ -86,7 +86,7 @@ export async function seedFirestore() {
       accesssion_no: "PLM-0001",
 
       species_id: 1,
-      collector_id: 1,
+      collector_ids: [1],
       location_id: 1,
 
       date_collected: new Date("2025-08-16"),
@@ -118,7 +118,7 @@ export async function seedFirestore() {
       accesssion_no: "PLM-0002",
 
       species_id: 2,
-      collector_id: 2,
+      collector_ids: [2],
       location_id: 2,
 
       date_collected: new Date("2024-09-12"),
@@ -152,7 +152,7 @@ export async function seedFirestore() {
       accesssion_no: "PLM-0003",
 
       species_id: 3,
-      collector_id: 3,
+      collector_ids: [3],
       location_id: 3,
 
       date_collected: new Date("2025-08-12"),

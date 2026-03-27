@@ -50,7 +50,7 @@ const initialValues: FormValues = {
   region: "",
   latitude: "",
   longitude: "",
-  collector_name: "",
+  collector_names: [""],
   date_collected: "",
   habitat: "",
   habit: "",
@@ -199,14 +199,30 @@ export function MultiForm() {
     }
 
     if (step === 2) {
-      const parsed = collectorStepSchema.safeParse({
-        name: values.collector_name,
-      });
+      const normalizedCollectorNames = values.collector_names
+        .map((collectorName) => collectorName.trim())
+        .filter(Boolean);
 
-      if (!parsed.success) {
+      if (normalizedCollectorNames.length === 0) {
         setErrors((prev) => ({
           ...prev,
-          collector_name: parsed.error.issues[0]?.message,
+          collector_names: "At least one collector is required.",
+        }));
+        return false;
+      }
+
+      const invalidCollector = normalizedCollectorNames.some((collectorName) => {
+        const parsed = collectorStepSchema.safeParse({
+          name: collectorName,
+        });
+
+        return !parsed.success;
+      });
+
+      if (invalidCollector) {
+        setErrors((prev) => ({
+          ...prev,
+          collector_names: "One or more collector names are invalid.",
         }));
         return false;
       }
@@ -249,6 +265,42 @@ export function MultiForm() {
 
   const handleBack = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
 
+  const handleCollectorNameChange = (index: number, value: string) => {
+    setValues((prev) => {
+      const collectorNames = [...prev.collector_names];
+      collectorNames[index] = value;
+      return {
+        ...prev,
+        collector_names: collectorNames,
+      };
+    });
+    setErrors((prev) => ({ ...prev, collector_names: undefined }));
+    setSubmitMessage("");
+  };
+
+  const handleAddCollector = () => {
+    setValues((prev) => ({
+      ...prev,
+      collector_names: [...prev.collector_names, ""],
+    }));
+    setErrors((prev) => ({ ...prev, collector_names: undefined }));
+  };
+
+  const handleRemoveCollector = (index: number) => {
+    setValues((prev) => {
+      if (prev.collector_names.length <= 1) {
+        return prev;
+      }
+
+      const collectorNames = prev.collector_names.filter((_, idx) => idx !== index);
+      return {
+        ...prev,
+        collector_names: collectorNames,
+      };
+    });
+    setErrors((prev) => ({ ...prev, collector_names: undefined }));
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -277,16 +329,20 @@ export function MultiForm() {
       longitude: parseOptionalNumber(values.longitude),
     };
 
-    const collector = {
-      collector_id: 0,
-      name: values.collector_name,
-    };
+    const normalizedCollectorNames = values.collector_names
+      .map((collectorName) => collectorName.trim())
+      .filter(Boolean);
+
+    const collectors = normalizedCollectorNames.map((collectorName, index) => ({
+      collector_id: index + 1,
+      name: collectorName,
+    }));
 
     const specimen = {
       specimen_id: 0,
       accesssion_no: values.accesssion_no,
       species_id: 0,
-      collector_id: 0,
+      collector_ids: collectors.map((collector) => collector.collector_id),
       location_id: 0,
       date_collected: new Date(values.date_collected),
       habitat: values.habitat,
@@ -302,13 +358,16 @@ export function MultiForm() {
 
     const speciesCheck = SpeciesSchema.safeParse(species);
     const locationCheck = LocationSchema.safeParse(location);
-    const collectorCheck = CollectorSchema.safeParse(collector);
+    const collectorChecks = collectors.map((collector) =>
+      CollectorSchema.safeParse(collector),
+    );
+    const hasCollectorError = collectorChecks.some((collectorCheck) => !collectorCheck.success);
     const specimenCheck = SpecimenSchema.safeParse(specimen);
 
     if (
       !speciesCheck.success ||
       !locationCheck.success ||
-      !collectorCheck.success ||
+      hasCollectorError ||
       !specimenCheck.success
     ) {
       setSubmitMessage("Validation failed. Please review your inputs.");
@@ -319,7 +378,9 @@ export function MultiForm() {
     console.log({
       species: speciesCheck.data,
       location: locationCheck.data,
-      collector: collectorCheck.data,
+      collectors: collectorChecks
+        .filter((collectorCheck): collectorCheck is { success: true; data: z.infer<typeof CollectorSchema> } => collectorCheck.success)
+        .map((collectorCheck) => collectorCheck.data),
       specimen: specimenCheck.data,
     });
 
@@ -414,7 +475,9 @@ export function MultiForm() {
               <CollectorSection
                 values={values}
                 errors={errors}
-                onFieldChange={setField}
+                onCollectorNameChange={handleCollectorNameChange}
+                onAddCollector={handleAddCollector}
+                onRemoveCollector={handleRemoveCollector}
               />
             )}
 

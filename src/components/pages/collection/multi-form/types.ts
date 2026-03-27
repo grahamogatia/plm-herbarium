@@ -12,7 +12,7 @@ export type FormValues = {
   region: Location["region"];
   latitude: string;
   longitude: string;
-  collector_name: Collector["name"];
+  collector_names: Collector["name"][];
   date_collected: string;
   habitat: Specimen["habitat"];
   habit: Specimen["habit"] | "";

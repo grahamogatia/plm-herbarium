@@ -1,7 +1,7 @@
 import {
   getSpecimenByAccession,
   getSpeciesBySpeciesId,
-  getCollectorByCollectorId,
+  getCollectorsByCollectorIds,
   getLocationByLocationId,
   type CollectionRow,
 } from "@/api/collection";
@@ -32,7 +32,7 @@ function CollectionDetails() {
   const { data } = useQuery<{
     specimen: Specimen | null;
     species: Species | null;
-    collector: Collector | null;
+    collectors: Collector[];
     specimenLocation: Location | null;
   }>({
     queryKey: ["specimen-details", decodedAccessionNo],
@@ -44,21 +44,21 @@ function CollectionDetails() {
         return {
           specimen: null,
           species: null,
-          collector: null,
+          collectors: [],
           specimenLocation: null,
         };
       }
 
-      const [species, collector, specimenLocation] = await Promise.all([
+      const [species, collectors, specimenLocation] = await Promise.all([
         getSpeciesBySpeciesId(specimen.species_id),
-        getCollectorByCollectorId(specimen.collector_id),
+        getCollectorsByCollectorIds(specimen.collector_ids),
         getLocationByLocationId(specimen.location_id),
       ]);
 
       return {
         specimen,
         species,
-        collector,
+        collectors,
         specimenLocation,
       };
     },
@@ -66,7 +66,7 @@ function CollectionDetails() {
 
   const specimen = data?.specimen ?? null;
   const species = data?.species ?? null;
-  const collector = data?.collector ?? null;
+  const collectors = data?.collectors ?? [];
   const specimenLocation = data?.specimenLocation ?? null;
 
   const formattedDateCollected = specimen?.date_collected
@@ -110,7 +110,7 @@ function CollectionDetails() {
                   <TabsContent value="summary">
                     <Summary
                       species={species}
-                      collector={collector}
+                      collectors={collectors}
                       specimenLocation={specimenLocation}
                       specimen={specimen}
                       formattedDateCollected={formattedDateCollected}

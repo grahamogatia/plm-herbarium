@@ -57,7 +57,10 @@ function ReviewSection({ values }: Props) {
       <section className="space-y-3">
         <h4 className="text-sm font-semibold">Collector</h4>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <ValueRow label="Collector Name" value={values.collector_name} />
+          <ValueRow
+            label="Collector(s)"
+            value={values.collector_names.filter(Boolean).join(", ")}
+          />
         </div>
       </section>
 
