@@ -20,8 +20,6 @@ export const SpecimenSchema = z.object({
   fruit_description: z.string().optional(),
   leaf_description: z.string().optional(),
 
-  conservation_status: z.enum(["EX", "EW", "CE", "EN", "VU", "NT", "LC"]),
-  nativity: z.enum(["Native", "Introduced", "Endemic"]),
   
   notes: z.string(),
 });
@@ -31,6 +29,9 @@ export const SpeciesSchema = z.object({
   family: z.string(),
   scientific_name: z.string(),
   common_name: z.string().optional(),
+    conservation_status: z.enum(["EX", "EW", "CE", "EN", "VU", "NT", "LC"]),
+  nativity: z.enum(["Native", "Introduced", "Endemic"]),
+
 });
 
 export const CollectorSchema = z.object({

@@ -14,7 +14,7 @@ function Header() {
     }`;
 
   const isHomePage = location.pathname === "/home" || location.pathname === "/";
-  const isCollectionPage = location.pathname === "/collections";
+  const isCollectionPage = location.pathname.startsWith("/collections");
 
   return (
     <header className="sticky top-0 z-50 w-full h-14 px-6 flex items-center justify-between bg-white">

@@ -4,6 +4,7 @@ import Header from "./components/layout/Header";
 import Home from "./pages/Home";
 import Collection from "./pages/Collection";
 import CollectionDetails from "./components/pages/collection/Specimen.tsx";
+import AddSpecimenPage from "./pages/AddSpecimenPage.tsx";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Routes>
             <Route path="/home" element={<Home />} />
             <Route path="/collections" element={<Collection />} />
+            <Route path="/collections/add-specimen" element={<AddSpecimenPage />} />
             <Route path="/collections/:accessionNo" element={<CollectionDetails />} />
             <Route path="/" element={<Navigate to="/home" replace />} />
           </Routes>

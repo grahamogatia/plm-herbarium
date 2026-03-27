@@ -5,6 +5,7 @@ import TableView from "@/components/pages/collection/TableView";
 import { getCollectionRows, type CollectionRow } from "@/api/collection";
 import { useEffect, useMemo, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AddSpecimen from "@/components/pages/collection/AddSpecimen";
 
 const COLLECTION_ROWS_STORAGE_KEY = "collectionRowsCache";
 
@@ -141,6 +142,7 @@ function Collection() {
               onSelectedFamiliesChange={setSelectedFamilies}
             />
           </div>
+          <AddSpecimen/>
         </div>
       </div>
       <Tabs
@@ -151,6 +153,7 @@ function Collection() {
             <TabsList variant="line">
               <TabsTrigger value="table">Table</TabsTrigger>
               <TabsTrigger value="gallery">Gallery</TabsTrigger>
+
             </TabsList>
           </Tabs>
       {viewMode === "table" ? (
