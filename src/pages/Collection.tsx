@@ -6,6 +6,7 @@ import { getCollectionRows, type CollectionRow } from "@/api/collection";
 import { useEffect, useMemo, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AddSpecimen from "@/components/pages/collection/AddSpecimen";
+import { Check } from "lucide-react";
 
 const COLLECTION_ROWS_STORAGE_KEY = "collectionRowsCache";
 
@@ -53,6 +54,7 @@ function Collection() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFamilies, setSelectedFamilies] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"table" | "gallery">("table");
+  const [deleteToastAccessionNo, setDeleteToastAccessionNo] = useState<string | null>(null);
 
   const familyOptions = useMemo(
     () => Array.from(new Set(rows.map((row) => row.family))).sort(),
@@ -128,6 +130,29 @@ function Collection() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!deleteToastAccessionNo) {
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      setDeleteToastAccessionNo(null);
+    }, 2000);
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [deleteToastAccessionNo]);
+
+  const handleDeleteRow = (deletedRow: CollectionRow) => {
+    setRows((prev) => {
+      const next = prev.filter((row) => row.accessionNo !== deletedRow.accessionNo);
+      persistRowsToSessionStorage(next);
+      return next;
+    });
+    setDeleteToastAccessionNo(deletedRow.accessionNo);
+  };
+
   return (
     <>
       <div className="bg-lime-800 p-4 w-full">
@@ -163,6 +188,7 @@ function Collection() {
           rows={filteredRows}
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
+          onDeleteRow={handleDeleteRow}
         />
       ) : (
         <CollectionGalleryView
@@ -171,6 +197,18 @@ function Collection() {
           rows={galleryRows}
         />
       )}
+
+      {deleteToastAccessionNo ? (
+        <div className="fixed bottom-4 right-4 z-50 w-[min(92vw,420px)] rounded-lg border border-emerald-300 bg-white p-4 shadow-xl">
+          <div className="mb-2 flex items-center gap-2 text-emerald-700">
+            <Check className="size-4" />
+            <p className="text-sm font-semibold">Specimen deleted successfully</p>
+          </div>
+          <p className="text-sm text-slate-700">
+            <span className="font-medium">Accession Code:</span> {deleteToastAccessionNo}
+          </p>
+        </div>
+      ) : null}
     </>
   );
 }

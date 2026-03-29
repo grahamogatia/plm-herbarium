@@ -4,6 +4,7 @@ import {
   getDocs,
   limit,
   query,
+  updateDoc,
   where,
   writeBatch,
 } from "firebase/firestore";
@@ -48,6 +49,7 @@ type SpecimenDoc = {
   specimen_id: number;
   accesssion_no?: string;
   photo_url?: string;
+  isDeleted?: boolean;
   species_id: number;
   collector_ids: number[];
   location_id: number;
@@ -218,24 +220,32 @@ export async function saveSpecimenEntry(
   const mode = options.mode ?? "create";
   const normalizedAccessionNo = normalizeText(input.specimen.accesssion_no);
 
-  const existingSpecimenSnapshot = await getDocs(
+  const matchingSpecimenSnapshot = await getDocs(
     query(
       collection(db, "specimens"),
       where("accesssion_no", "==", normalizedAccessionNo),
-      limit(1),
     ),
   );
 
-  if (mode === "create" && !existingSpecimenSnapshot.empty) {
+  const matchingSpecimens = matchingSpecimenSnapshot.docs.map((snapshotDoc) => ({
+    doc: snapshotDoc,
+    data: snapshotDoc.data() as SpecimenDoc,
+  }));
+
+  const activeMatchingSpecimen = matchingSpecimens.find(
+    (entry) => !entry.data.isDeleted,
+  );
+
+  if (mode === "create" && activeMatchingSpecimen) {
     throw new Error("A specimen with this accession number already exists.");
   }
 
-  if (mode === "update" && existingSpecimenSnapshot.empty) {
+  if (mode === "update" && !activeMatchingSpecimen) {
     throw new Error("Specimen to update was not found.");
   }
 
-  const existingSpecimenDoc = existingSpecimenSnapshot.docs.at(0);
-  const existingSpecimenData = existingSpecimenDoc?.data() as SpecimenDoc | undefined;
+  const existingSpecimenDoc = activeMatchingSpecimen?.doc;
+  const existingSpecimenData = activeMatchingSpecimen?.data;
 
   const speciesIdResult = await findExistingSpeciesId(input.species);
   const locationIdResult = await findExistingLocationId(input.location);
@@ -360,6 +370,35 @@ export async function saveSpecimenEntry(
   return specimenId;
 }
 
+export async function softDeleteSpecimenByAccession(
+  accessionNo: string,
+): Promise<void> {
+  const normalizedAccessionNo = accessionNo.trim();
+  if (!normalizedAccessionNo) {
+    throw new Error("Accession number is required.");
+  }
+
+  const specimenSnapshot = await getDocs(
+    query(
+      collection(db, "specimens"),
+      where("accesssion_no", "==", normalizedAccessionNo),
+      limit(1),
+    ),
+  );
+
+  const specimenDoc = specimenSnapshot.docs.at(0);
+  if (!specimenDoc) {
+    throw new Error("Specimen not found.");
+  }
+
+  await updateDoc(specimenDoc.ref, {
+    isDeleted: true,
+  });
+
+  collectionRowsCache = null;
+  collectionRowsCacheTimestamp = 0;
+}
+
 export async function getCollectionRows(): Promise<CollectionRow[]> {
   const now = Date.now();
   const isCacheFresh =
@@ -404,8 +443,10 @@ export async function getCollectionRows(): Promise<CollectionRow[]> {
       })
     );
 
-    const rows = specimensSnapshot.docs.map((doc) => {
-      const specimen = doc.data() as SpecimenDoc;
+    const rows = specimensSnapshot.docs
+      .map((doc) => doc.data() as SpecimenDoc)
+      .filter((specimen) => !specimen.isDeleted)
+      .map((specimen) => {
       const species = speciesById.get(specimen.species_id);
       const collectors = (specimen.collector_ids ?? [])
         .map((collectorId) => collectorsById.get(collectorId))
@@ -452,6 +493,9 @@ export async function getCollectionRowByAccession(
   }
 
   const specimen = specimenDoc.data() as SpecimenDoc;
+  if (specimen.isDeleted) {
+    return null;
+  }
 
   const [speciesSnapshot, locationSnapshot, collectors] = await Promise.all([
     getDocs(
@@ -513,6 +557,9 @@ export async function getSpecimenByAccession(
   }
 
   const rawSpecimen = specimenDoc.data() as SpecimenDoc;
+  if (rawSpecimen.isDeleted) {
+    return null;
+  }
   const parsedSpecimen = SpecimenSchema.safeParse(
     normalizeSpecimenDocForSchema(rawSpecimen),
   );

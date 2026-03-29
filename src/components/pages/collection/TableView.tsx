@@ -2,6 +2,7 @@ import type { CollectionRow } from "@/api/collection";
 import { DataTable } from "@/components/ui/datatable";
 import { specimenColumns } from "@/data/columns";
 import { useNavigate } from "react-router-dom";
+import { useMemo } from "react";
 
 type TableViewProps = {
   isLoading: boolean;
@@ -9,6 +10,7 @@ type TableViewProps = {
   rows: CollectionRow[];
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
+  onDeleteRow?: (row: CollectionRow) => void;
 };
 
 function TableView({
@@ -17,8 +19,13 @@ function TableView({
   rows,
   searchQuery,
   onSearchQueryChange,
+  onDeleteRow,
 }: TableViewProps) {
   const navigate = useNavigate();
+  const columns = useMemo(
+    () => specimenColumns({ onDeleted: onDeleteRow }),
+    [onDeleteRow],
+  );
 
   if (isLoading) {
     return (
@@ -39,7 +46,7 @@ function TableView({
   return (
     <div className="bg-white text-zinc-900 rounded-lg p-4">
       <DataTable
-        columns={specimenColumns}
+        columns={columns}
         data={rows}
         globalFilter={searchQuery}
         onGlobalFilterChange={onSearchQueryChange}

@@ -1,10 +1,96 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { CalendarDays, Hash, ImageOff, Leaf, MapPin, Pencil, Trash2, UserRound } from "lucide-react";
-import type { CollectionRow } from "@/api/collection";
+import { useState } from "react";
+import { softDeleteSpecimenByAccession, type CollectionRow } from "@/api/collection";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-export const specimenColumns: ColumnDef<CollectionRow>[] = [
+type DeleteSpecimenButtonProps = {
+  row: CollectionRow;
+  onDeleted?: (row: CollectionRow) => void;
+};
+
+function DeleteSpecimenButton({ row, onDeleted }: DeleteSpecimenButtonProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await softDeleteSpecimenByAccession(row.accessionNo);
+      onDeleted?.(row);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to delete specimen.";
+      window.alert(message);
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="destructive"
+          size="icon-xs"
+          aria-label={`Delete specimen ${row.accessionNo}`}
+          title="Delete"
+        >
+          <Trash2 aria-hidden="true" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete specimen?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will mark the specimen as deleted and hide it from collection views.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+
+        <div className="grid gap-1 rounded-md border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700">
+          <p><span className="font-medium">Accession No:</span> {row.accessionNo}</p>
+          <p><span className="font-medium">Scientific Name:</span> {row.taxon}</p>
+          <p><span className="font-medium">Collector(s):</span> {row.collector}</p>
+          <p><span className="font-medium">Date Collected:</span> {row.date}</p>
+        </div>
+
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            disabled={isDeleting}
+            onClick={handleDelete}
+          >
+            {isDeleting ? "Deleting..." : "Yes, Delete"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+type SpecimenColumnsOptions = {
+  onDeleted?: (row: CollectionRow) => void;
+};
+
+export function specimenColumns(
+  options: SpecimenColumnsOptions = {},
+): ColumnDef<CollectionRow>[] {
+  const { onDeleted } = options;
+
+  return [
   {
     id: "image",
     header: "Image",
@@ -102,17 +188,10 @@ export const specimenColumns: ColumnDef<CollectionRow>[] = [
               <Pencil aria-hidden="true" />
             </Link>
           </Button>
-          <Button
-            variant="destructive"
-            className="bg-red-700"
-            size="icon-xs"
-            aria-label={`Delete specimen ${row.original.accessionNo}`}
-            title="Delete"
-          >
-            <Trash2 aria-hidden="true" />
-          </Button>
+          <DeleteSpecimenButton row={row.original} onDeleted={onDeleted} />
         </div>
       </div>
     ),
   },
-];
+  ];
+}
