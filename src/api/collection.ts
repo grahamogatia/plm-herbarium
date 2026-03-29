@@ -1,4 +1,12 @@
-import { collection, getDocs, limit, query, where } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDocs,
+  limit,
+  query,
+  where,
+  writeBatch,
+} from "firebase/firestore";
 import { db } from "@/api/database";
 import { SpecimenSchema } from "@/data/schemas";
 import type { Specimen, Species, Collector, Location } from "@/data/types";
@@ -43,6 +51,13 @@ type SpecimenDoc = {
   collector_ids: number[];
   location_id: number;
   date_collected?: unknown;
+};
+
+type SaveSpecimenInput = {
+  species: Omit<Species, "species_id">;
+  location: Omit<Location, "location_id">;
+  collectors: Array<Omit<Collector, "collector_id">>;
+  specimen: Omit<Specimen, "specimen_id" | "species_id" | "collector_ids" | "location_id">;
 };
 
 function mapSpecimenToRow(
@@ -91,6 +106,238 @@ function formatDate(value: unknown): string {
   }
 
   return String(value);
+}
+
+function normalizeText(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+function numberOrNull(value?: number): number | null {
+  return typeof value === "number" ? value : null;
+}
+
+async function getNextNumericIds(
+  collectionName: "species" | "locations" | "collectors" | "specimens",
+  fieldName: "species_id" | "location_id" | "collector_id" | "specimen_id",
+  count: number,
+): Promise<number[]> {
+  if (count <= 0) {
+    return [];
+  }
+
+  const snapshot = await getDocs(collection(db, collectionName));
+
+  const maxId = snapshot.docs.reduce((currentMax, snapshotDoc) => {
+    const value = snapshotDoc.data()?.[fieldName];
+    if (typeof value === "number" && value > currentMax) {
+      return value;
+    }
+    return currentMax;
+  }, 0);
+
+  return Array.from({ length: count }, (_, index) => maxId + index + 1);
+}
+
+async function findExistingSpeciesId(
+  species: Omit<Species, "species_id">,
+): Promise<number | null> {
+  const speciesSnapshot = await getDocs(
+    query(
+      collection(db, "species"),
+      where("scientific_name", "==", normalizeText(species.scientific_name)),
+    ),
+  );
+
+  const existingSpecies = speciesSnapshot.docs
+    .map((snapshotDoc) => snapshotDoc.data() as Species)
+    .find((entry) =>
+      normalizeText(entry.family) === normalizeText(species.family) &&
+      normalizeText(entry.scientific_name) === normalizeText(species.scientific_name) &&
+      entry.conservation_status === species.conservation_status &&
+      entry.nativity === species.nativity,
+    );
+
+  if (existingSpecies) {
+    return existingSpecies.species_id;
+  }
+
+    return null;
+}
+
+  async function findExistingLocationId(
+    location: Omit<Location, "location_id">,
+  ): Promise<number | null> {
+  const locationSnapshot = await getDocs(
+    query(
+      collection(db, "locations"),
+      where("locality", "==", normalizeText(location.locality)),
+    ),
+  );
+
+  const existingLocation = locationSnapshot.docs
+    .map((snapshotDoc) => snapshotDoc.data() as Location)
+    .find((entry) =>
+      normalizeText(entry.province) === normalizeText(location.province) &&
+      normalizeText(entry.region) === normalizeText(location.region) &&
+      numberOrNull(entry.latitude) === numberOrNull(location.latitude) &&
+      numberOrNull(entry.longitude) === numberOrNull(location.longitude),
+    );
+
+  if (existingLocation) {
+    return existingLocation.location_id;
+  }
+
+    return null;
+}
+
+  async function findExistingCollectorId(name: string): Promise<number | null> {
+  const normalizedName = normalizeText(name);
+
+  const collectorSnapshot = await getDocs(
+    query(collection(db, "collectors"), where("name", "==", normalizedName), limit(1)),
+  );
+
+  const existingCollector = collectorSnapshot.docs.at(0)?.data() as Collector | undefined;
+  if (existingCollector) {
+    return existingCollector.collector_id;
+  }
+
+  return null;
+}
+
+export async function saveSpecimenEntry(input: SaveSpecimenInput): Promise<number> {
+  const normalizedAccessionNo = normalizeText(input.specimen.accesssion_no);
+
+  const existingSpecimenSnapshot = await getDocs(
+    query(
+      collection(db, "specimens"),
+      where("accesssion_no", "==", normalizedAccessionNo),
+      limit(1),
+    ),
+  );
+
+  if (!existingSpecimenSnapshot.empty) {
+    throw new Error("A specimen with this accession number already exists.");
+  }
+
+  const speciesIdResult = await findExistingSpeciesId(input.species);
+  const locationIdResult = await findExistingLocationId(input.location);
+
+  let speciesId = speciesIdResult;
+  if (speciesId === null) {
+    const [nextSpeciesId] = await getNextNumericIds("species", "species_id", 1);
+    speciesId = nextSpeciesId;
+  }
+
+  let locationId = locationIdResult;
+  if (locationId === null) {
+    const [nextLocationId] = await getNextNumericIds("locations", "location_id", 1);
+    locationId = nextLocationId;
+  }
+
+  const normalizedCollectorNames = Array.from(
+    new Set(input.collectors.map((collector) => normalizeText(collector.name)).filter(Boolean)),
+  );
+
+  if (normalizedCollectorNames.length === 0) {
+    throw new Error("At least one collector is required.");
+  }
+
+  const collectorIdByName = new Map<string, number>();
+  const collectorNamesToCreate: string[] = [];
+  for (const collectorName of normalizedCollectorNames) {
+    const existingCollectorId = await findExistingCollectorId(collectorName);
+    if (existingCollectorId !== null) {
+      collectorIdByName.set(collectorName, existingCollectorId);
+      continue;
+    }
+
+    collectorNamesToCreate.push(collectorName);
+  }
+
+  if (collectorNamesToCreate.length > 0) {
+    const nextCollectorIds = await getNextNumericIds(
+      "collectors",
+      "collector_id",
+      collectorNamesToCreate.length,
+    );
+
+    collectorNamesToCreate.forEach((collectorName, index) => {
+      collectorIdByName.set(collectorName, nextCollectorIds[index]);
+    });
+  }
+
+  const collectorIds = normalizedCollectorNames.map((collectorName) => {
+    const collectorId = collectorIdByName.get(collectorName);
+    if (typeof collectorId !== "number") {
+      throw new Error("Failed to resolve collector IDs.");
+    }
+    return collectorId;
+  });
+
+  const [specimenId] = await getNextNumericIds("specimens", "specimen_id", 1);
+  const batch = writeBatch(db);
+
+  if (speciesIdResult === null) {
+    batch.set(doc(db, "species", String(speciesId)), {
+      species_id: speciesId,
+      family: normalizeText(input.species.family),
+      scientific_name: normalizeText(input.species.scientific_name),
+      common_name: input.species.common_name
+        ? normalizeText(input.species.common_name)
+        : undefined,
+      conservation_status: input.species.conservation_status,
+      nativity: input.species.nativity,
+    });
+  }
+
+  if (locationIdResult === null) {
+    batch.set(doc(db, "locations", String(locationId)), {
+      location_id: locationId,
+      locality: normalizeText(input.location.locality),
+      province: normalizeText(input.location.province),
+      region: normalizeText(input.location.region),
+      latitude: input.location.latitude,
+      longitude: input.location.longitude,
+    });
+  }
+
+  collectorNamesToCreate.forEach((collectorName) => {
+    const collectorId = collectorIdByName.get(collectorName);
+    if (typeof collectorId !== "number") {
+      return;
+    }
+
+    batch.set(doc(db, "collectors", String(collectorId)), {
+      collector_id: collectorId,
+      name: collectorName,
+    });
+  });
+
+  batch.set(doc(db, "specimens", String(specimenId)), {
+    specimen_id: specimenId,
+    accesssion_no: normalizedAccessionNo,
+    species_id: speciesId,
+    collector_ids: collectorIds,
+    location_id: locationId,
+    date_collected: input.specimen.date_collected,
+    habitat: normalizeText(input.specimen.habitat),
+    habit: input.specimen.habit,
+    altitude_masl: input.specimen.altitude_masl,
+    plant_height_m: input.specimen.plant_height_m,
+    dbh_cm: input.specimen.dbh_cm,
+    flower_description: input.specimen.flower_description,
+    fruit_description: input.specimen.fruit_description,
+    leaf_description: input.specimen.leaf_description,
+    notes: input.specimen.notes,
+  });
+
+  await batch.commit();
+
+  collectionRowsCache = null;
+  collectionRowsCacheTimestamp = 0;
+
+  return specimenId;
 }
 
 export async function getCollectionRows(): Promise<CollectionRow[]> {
@@ -274,6 +521,26 @@ export async function getSpeciesBySpeciesId(
   }
 
   return speciesDoc.data() as Species;
+}
+
+export async function getSpeciesFamilies(): Promise<string[]> {
+  const speciesSnapshot = await getDocs(collection(db, "species"));
+
+  const familySet = new Set<string>();
+
+  speciesSnapshot.docs.forEach((speciesDoc) => {
+    const family = speciesDoc.data()?.family;
+    if (typeof family !== "string") {
+      return;
+    }
+
+    const normalizedFamily = normalizeText(family);
+    if (normalizedFamily) {
+      familySet.add(normalizedFamily);
+    }
+  });
+
+  return Array.from(familySet).sort((a, b) => a.localeCompare(b));
 }
 
 export async function getCollectorByCollectorId(

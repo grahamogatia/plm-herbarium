@@ -1,4 +1,12 @@
 import { Input } from "@/components/ui/input";
+import { useMemo } from "react";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 
 import FieldBlock from "./FieldBlock";
 import type { FormErrors, FormValues } from "./types";
@@ -6,6 +14,7 @@ import type { FormErrors, FormValues } from "./types";
 type Props = {
   values: FormValues;
   errors: FormErrors;
+  familyOptions: string[];
   conservationOptions: readonly string[];
   nativityOptions: readonly string[];
   onFieldChange: (key: keyof FormValues, value: string) => void;
@@ -14,10 +23,22 @@ type Props = {
 function SpeciesSection({
   values,
   errors,
+  familyOptions,
   conservationOptions,
   nativityOptions,
   onFieldChange,
 }: Props) {
+  const filteredFamilyOptions = useMemo(() => {
+    const query = values.family.trim().toLowerCase();
+    if (!query) {
+      return familyOptions;
+    }
+
+    return familyOptions.filter((family) =>
+      family.toLowerCase().includes(query),
+    );
+  }, [familyOptions, values.family]);
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <FieldBlock
@@ -60,12 +81,33 @@ function SpeciesSection({
       </FieldBlock>
 
       <FieldBlock label="Family" htmlFor="family" error={errors.family}>
-        <Input
-          id="family"
-          className="h-10"
-          value={values.family}
-          onChange={(event) => onFieldChange("family", event.target.value)}
-        />
+        <Combobox
+          value={values.family || null}
+          inputValue={values.family}
+          onInputValueChange={(inputValue) => onFieldChange("family", inputValue)}
+          onValueChange={(value) => onFieldChange("family", value ?? "")}
+        >
+          <ComboboxInput
+            id="family"
+            className="h-10 w-full"
+            placeholder="Select or type family"
+            showClear
+          />
+          <ComboboxContent>
+            <ComboboxList>
+              {values.family.trim() !== "" && filteredFamilyOptions.length === 0 ? (
+                <div className="px-2 py-2 text-sm text-muted-foreground">
+                  No matching family found. Keep typing to add a new one.
+                </div>
+              ) : null}
+              {filteredFamilyOptions.map((family) => (
+                <ComboboxItem key={family} value={family}>
+                  {family}
+                </ComboboxItem>
+              ))}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
       </FieldBlock>
 
       <FieldBlock

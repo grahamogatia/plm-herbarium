@@ -1,5 +1,4 @@
-import { useMemo, useState } from "react";
-import type { FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import {
   Check,
@@ -26,6 +25,7 @@ import DetailsSection from "@/components/pages/collection/multi-form/DetailsSect
 import LocationSection from "@/components/pages/collection/multi-form/LocationSection";
 import ReviewSection from "@/components/pages/collection/multi-form/ReviewSection";
 import SpeciesSection from "@/components/pages/collection/multi-form/SpeciesSection";
+import { getSpeciesFamilies, saveSpecimenEntry } from "@/api/collection";
 import type { FormErrors, FormValues } from "@/components/pages/collection/multi-form/types";
 import {
   CollectorSchema,
@@ -143,12 +143,58 @@ const issueMap = (error: z.ZodError): FormErrors => {
   return mappedErrors;
 };
 
+type SuccessSubmissionSummary = {
+  accessionNo: string;
+  scientificName: string;
+  collectors: string;
+};
+
 export function MultiForm() {
   const [currentStep, setCurrentStep] = useState(0);
   const [values, setValues] = useState<FormValues>(initialValues);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
+  const [successSummary, setSuccessSummary] =
+    useState<SuccessSubmissionSummary | null>(null);
+  const [familyOptions, setFamilyOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadFamilies = async () => {
+      try {
+        const families = await getSpeciesFamilies();
+        if (isMounted) {
+          setFamilyOptions(families);
+        }
+      } catch {
+        if (isMounted) {
+          setFamilyOptions([]);
+        }
+      }
+    };
+
+    void loadFamilies();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!successSummary) {
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      setSuccessSummary(null);
+    }, 6000);
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [successSummary]);
 
   const isLastStep = currentStep === steps.length - 1;
   const progress = useMemo(
@@ -160,6 +206,7 @@ export function MultiForm() {
     setValues((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
     setSubmitMessage("");
+    setSuccessSummary(null);
   };
 
   const validateStep = (step: number): boolean => {
@@ -301,8 +348,10 @@ export function MultiForm() {
     setErrors((prev) => ({ ...prev, collector_names: undefined }));
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmitClick = async () => {
+    if (!isLastStep) {
+      return;
+    }
 
     if (!validateStep(currentStep)) {
       return;
@@ -310,6 +359,7 @@ export function MultiForm() {
 
     setIsSubmitting(true);
     setSubmitMessage("");
+    setSuccessSummary(null);
 
     const species = {
       species_id: 0,
@@ -375,18 +425,71 @@ export function MultiForm() {
       return;
     }
 
-    console.log({
-      species: speciesCheck.data,
-      location: locationCheck.data,
-      collectors: collectorChecks
-        .filter((collectorCheck): collectorCheck is { success: true; data: z.infer<typeof CollectorSchema> } => collectorCheck.success)
-        .map((collectorCheck) => collectorCheck.data),
-      specimen: specimenCheck.data,
-    });
+    try {
+      const collectorPayload = collectorChecks
+        .filter(
+          (
+            collectorCheck,
+          ): collectorCheck is {
+            success: true;
+            data: z.infer<typeof CollectorSchema>;
+          } => collectorCheck.success,
+        )
+        .map((collectorCheck) => ({
+          name: collectorCheck.data.name,
+        }));
 
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setSubmitMessage("Specimen form is valid and ready to save.");
-    setIsSubmitting(false);
+      await saveSpecimenEntry({
+        species: {
+          family: speciesCheck.data.family,
+          scientific_name: speciesCheck.data.scientific_name,
+          common_name: speciesCheck.data.common_name,
+          conservation_status: speciesCheck.data.conservation_status,
+          nativity: speciesCheck.data.nativity,
+        },
+        location: {
+          locality: locationCheck.data.locality,
+          province: locationCheck.data.province,
+          region: locationCheck.data.region,
+          latitude: locationCheck.data.latitude,
+          longitude: locationCheck.data.longitude,
+        },
+        collectors: collectorPayload,
+        specimen: {
+          accesssion_no: specimenCheck.data.accesssion_no,
+          date_collected: specimenCheck.data.date_collected,
+          habitat: specimenCheck.data.habitat,
+          habit: specimenCheck.data.habit,
+          altitude_masl: specimenCheck.data.altitude_masl,
+          plant_height_m: specimenCheck.data.plant_height_m,
+          dbh_cm: specimenCheck.data.dbh_cm,
+          flower_description: specimenCheck.data.flower_description,
+          fruit_description: specimenCheck.data.fruit_description,
+          leaf_description: specimenCheck.data.leaf_description,
+          notes: specimenCheck.data.notes,
+        },
+      });
+
+      const collectorNames = collectorPayload.map((collector) => collector.name).join(", ");
+
+      setSuccessSummary({
+        accessionNo: specimenCheck.data.accesssion_no,
+        scientificName: speciesCheck.data.scientific_name,
+        collectors: collectorNames,
+      });
+      setSubmitMessage("");
+      setValues(initialValues);
+      setErrors({});
+      setCurrentStep(0);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to save specimen. Please try again.";
+      setSubmitMessage(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -451,12 +554,13 @@ export function MultiForm() {
       </CardHeader>
 
       <CardContent>
-        <form id="multi-form" onSubmit={handleSubmit} className="space-y-5">
+        <form id="multi-form" onSubmit={(event) => event.preventDefault()} className="space-y-5">
           <div className="rounded-xl border border-border/70 bg-card/80 p-4 sm:p-6">
             {currentStep === 0 && (
               <SpeciesSection
                 values={values}
                 errors={errors}
+                familyOptions={familyOptions}
                 conservationOptions={conservationOptions}
                 nativityOptions={nativityOptions}
                 onFieldChange={setField}
@@ -517,7 +621,7 @@ export function MultiForm() {
             <ChevronRight className="size-4" />
           </Button>
         ) : (
-          <Button type="submit" form="multi-form" disabled={isSubmitting}>
+          <Button type="button" onClick={handleSubmitClick} disabled={isSubmitting}>
             {isSubmitting ? "Submitting..." : "Submit Specimen"}
           </Button>
         )}
@@ -527,6 +631,26 @@ export function MultiForm() {
         <p className="px-6 pb-5 text-sm font-medium text-emerald-700">
           {submitMessage}
         </p>
+      ) : null}
+
+      {successSummary ? (
+        <div className="fixed bottom-4 right-4 z-50 w-[min(92vw,420px)] rounded-lg border border-emerald-300 bg-white p-4 shadow-xl">
+          <div className="mb-2 flex items-center gap-2 text-emerald-700">
+            <Check className="size-4" />
+            <p className="text-sm font-semibold">Specimen submitted successfully</p>
+          </div>
+          <div className="space-y-1 text-sm text-slate-700">
+            <p>
+              <span className="font-medium">Accession Code:</span> {successSummary.accessionNo}
+            </p>
+            <p>
+              <span className="font-medium">Scientific Name:</span> {successSummary.scientificName}
+            </p>
+            <p>
+              <span className="font-medium">Collectors:</span> {successSummary.collectors}
+            </p>
+          </div>
+        </div>
       ) : null}
     </Card>
   );
