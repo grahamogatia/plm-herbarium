@@ -12,6 +12,16 @@ type Props = {
 function LocationSection({ values, errors, onFieldChange }: Props) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <FieldBlock label="Country" htmlFor="country" error={errors.country}>
+        <Input
+          id="country"
+          className="h-10"
+          value="Philippines"
+          readOnly
+          disabled
+        />
+      </FieldBlock>
+
       <FieldBlock label="Locality" htmlFor="locality" error={errors.locality}>
         <Input
           id="locality"

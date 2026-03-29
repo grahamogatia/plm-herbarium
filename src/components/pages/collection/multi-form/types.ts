@@ -7,6 +7,7 @@ export type FormValues = {
   family: Species["family"];
   conservation_status: Species["conservation_status"] | "";
   nativity: Species["nativity"] | "";
+  country: Location["country"];
   locality: Location["locality"];
   province: Location["province"];
   region: Location["region"];

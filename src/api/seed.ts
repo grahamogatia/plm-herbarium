@@ -52,6 +52,7 @@ export async function seedFirestore() {
   await Promise.all([
     setDoc(doc(db, "locations", "1"), {
       location_id: 1,
+      country: "Philippines",
       locality: "Diamond St., Pandayan, Meycauayan",
       province: "Bulacan",
       region: "Region III",
@@ -61,6 +62,7 @@ export async function seedFirestore() {
 
     setDoc(doc(db, "locations", "2"), {
       location_id: 2,
+      country: "Philippines",
       locality: "Orientville 1, Bacoor",
       province: "Cavite",
       region: "Region IV-A",
@@ -70,6 +72,7 @@ export async function seedFirestore() {
 
     setDoc(doc(db, "locations", "3"), {
       location_id: 3,
+      country: "Philippines",
       locality: "Karuhatan, Valenzuela",
       province: "Metro Manila",
       region: "NCR",

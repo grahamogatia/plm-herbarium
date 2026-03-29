@@ -40,6 +40,7 @@ type CollectorDoc = {
 
 type LocationDoc = {
   location_id: number;
+  country?: string;
   locality: string;
 };
 
@@ -177,6 +178,7 @@ async function findExistingSpeciesId(
   const existingLocation = locationSnapshot.docs
     .map((snapshotDoc) => snapshotDoc.data() as Location)
     .find((entry) =>
+      normalizeText(entry.country ?? "Philippines") === normalizeText(location.country) &&
       normalizeText(entry.province) === normalizeText(location.province) &&
       normalizeText(entry.region) === normalizeText(location.region) &&
       numberOrNull(entry.latitude) === numberOrNull(location.latitude) &&
@@ -294,6 +296,7 @@ export async function saveSpecimenEntry(input: SaveSpecimenInput): Promise<numbe
   if (locationIdResult === null) {
     batch.set(doc(db, "locations", String(locationId)), {
       location_id: locationId,
+      country: input.location.country,
       locality: normalizeText(input.location.locality),
       province: normalizeText(input.location.province),
       region: normalizeText(input.location.region),

@@ -11,7 +11,7 @@ export const SpecimenSchema = z.object({
   date_collected: z.date(),
   habitat: z.string(),
   habit: z.enum(["tree", "shrub", "herb", "vine", "epiphyte"]),
-  
+
   altitude_masl: z.number(),
   plant_height_m: z.number(),
   dbh_cm: z.number().nullable(),
@@ -20,7 +20,6 @@ export const SpecimenSchema = z.object({
   fruit_description: z.string().optional(),
   leaf_description: z.string().optional(),
 
-  
   notes: z.string(),
 });
 
@@ -29,9 +28,8 @@ export const SpeciesSchema = z.object({
   family: z.string(),
   scientific_name: z.string(),
   common_name: z.string().optional(),
-    conservation_status: z.enum(["EX", "EW", "CE", "EN", "VU", "NT", "LC"]),
+  conservation_status: z.enum(["EX", "EW", "CE", "EN", "VU", "NT", "LC"]),
   nativity: z.enum(["Native", "Introduced", "Endemic"]),
-
 });
 
 export const CollectorSchema = z.object({
@@ -41,6 +39,7 @@ export const CollectorSchema = z.object({
 
 export const LocationSchema = z.object({
   location_id: z.number(),
+  country: z.literal("Philippines"),
   locality: z.string(),
   province: z.string(),
   region: z.string(),

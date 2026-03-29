@@ -45,6 +45,7 @@ const initialValues: FormValues = {
   family: "",
   conservation_status: "",
   nativity: "",
+  country: "Philippines",
   locality: "",
   province: "",
   region: "",
@@ -230,6 +231,7 @@ export function MultiForm() {
 
     if (step === 1) {
       const parsed = locationStepSchema.safeParse({
+        country: values.country,
         locality: values.locality,
         province: values.province,
         region: values.region,
@@ -372,6 +374,7 @@ export function MultiForm() {
 
     const location = {
       location_id: 0,
+      country: values.country,
       locality: values.locality,
       province: values.province,
       region: values.region,
@@ -448,6 +451,7 @@ export function MultiForm() {
           nativity: speciesCheck.data.nativity,
         },
         location: {
+          country: locationCheck.data.country,
           locality: locationCheck.data.locality,
           province: locationCheck.data.province,
           region: locationCheck.data.region,

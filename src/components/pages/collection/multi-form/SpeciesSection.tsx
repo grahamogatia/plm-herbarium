@@ -7,6 +7,13 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@/components/ui/combobox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import FieldBlock from "./FieldBlock";
 import type { FormErrors, FormValues } from "./types";
@@ -49,6 +56,7 @@ function SpeciesSection({
         <Input
           id="accessionNo"
           className="h-10"
+          placeholder="e.g. PLM-2026-001"
           value={values.accesssion_no}
           onChange={(event) => onFieldChange("accesssion_no", event.target.value)}
         />
@@ -61,7 +69,8 @@ function SpeciesSection({
       >
         <Input
           id="scientificName"
-          className="h-10"
+          className="h-10 italic"
+          placeholder="e.g. Ficus benjamina"
           value={values.scientific_name}
           onChange={(event) => onFieldChange("scientific_name", event.target.value)}
         />
@@ -75,6 +84,7 @@ function SpeciesSection({
         <Input
           id="commonName"
           className="h-10"
+          placeholder="e.g. Weeping fig"
           value={values.common_name}
           onChange={(event) => onFieldChange("common_name", event.target.value)}
         />
@@ -89,7 +99,7 @@ function SpeciesSection({
         >
           <ComboboxInput
             id="family"
-            className="h-10 w-full"
+            className="h-10 w-full italic"
             placeholder="Select or type family"
             showClear
           />
@@ -101,7 +111,7 @@ function SpeciesSection({
                 </div>
               ) : null}
               {filteredFamilyOptions.map((family) => (
-                <ComboboxItem key={family} value={family}>
+                <ComboboxItem key={family} value={family} className="italic">
                   {family}
                 </ComboboxItem>
               ))}
@@ -115,37 +125,39 @@ function SpeciesSection({
         htmlFor="conservation"
         error={errors.conservation_status}
       >
-        <select
-          id="conservation"
-          className="border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full rounded-md border px-3 text-sm"
-          value={values.conservation_status}
-          onChange={(event) =>
-            onFieldChange("conservation_status", event.target.value)
-          }
+        <Select
+          value={values.conservation_status || undefined}
+          onValueChange={(value) => onFieldChange("conservation_status", value)}
         >
-          <option value="">Select status</option>
-          {conservationOptions.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="conservation" className="h-10 w-full">
+            <SelectValue placeholder="Select status" />
+          </SelectTrigger>
+          <SelectContent>
+            {conservationOptions.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </FieldBlock>
 
       <FieldBlock label="Nativity" htmlFor="nativity" error={errors.nativity}>
-        <select
-          id="nativity"
-          className="border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full rounded-md border px-3 text-sm"
-          value={values.nativity}
-          onChange={(event) => onFieldChange("nativity", event.target.value)}
+        <Select
+          value={values.nativity || undefined}
+          onValueChange={(value) => onFieldChange("nativity", value)}
         >
-          <option value="">Select nativity</option>
-          {nativityOptions.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="nativity" className="h-10 w-full">
+            <SelectValue placeholder="Select nativity" />
+          </SelectTrigger>
+          <SelectContent>
+            {nativityOptions.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </FieldBlock>
     </div>
   );
