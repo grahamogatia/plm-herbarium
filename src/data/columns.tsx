@@ -2,6 +2,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { CalendarDays, Hash, ImageOff, Leaf, MapPin, Pencil, Trash2, UserRound } from "lucide-react";
 import type { CollectionRow } from "@/api/collection";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 export const specimenColumns: ColumnDef<CollectionRow>[] = [
   {
@@ -91,12 +92,15 @@ export const specimenColumns: ColumnDef<CollectionRow>[] = [
           onClick={(event) => event.stopPropagation()}
         >
           <Button
+            asChild
             variant="outline"
             size="icon-xs"
             aria-label={`Update specimen ${row.original.accessionNo}`}
             title="Update"
           >
-            <Pencil aria-hidden="true" />
+            <Link to={`/collections/update/${encodeURIComponent(row.original.accessionNo)}`}>
+              <Pencil aria-hidden="true" />
+            </Link>
           </Button>
           <Button
             variant="destructive"

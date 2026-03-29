@@ -61,6 +61,10 @@ type SaveSpecimenInput = {
   specimen: Omit<Specimen, "specimen_id" | "species_id" | "collector_ids" | "location_id">;
 };
 
+type SaveSpecimenOptions = {
+  mode?: "create" | "update";
+};
+
 function mapSpecimenToRow(
   specimen: SpecimenDoc,
   species?: SpeciesDoc,
@@ -207,7 +211,11 @@ async function findExistingSpeciesId(
   return null;
 }
 
-export async function saveSpecimenEntry(input: SaveSpecimenInput): Promise<number> {
+export async function saveSpecimenEntry(
+  input: SaveSpecimenInput,
+  options: SaveSpecimenOptions = {},
+): Promise<number> {
+  const mode = options.mode ?? "create";
   const normalizedAccessionNo = normalizeText(input.specimen.accesssion_no);
 
   const existingSpecimenSnapshot = await getDocs(
@@ -218,9 +226,16 @@ export async function saveSpecimenEntry(input: SaveSpecimenInput): Promise<numbe
     ),
   );
 
-  if (!existingSpecimenSnapshot.empty) {
+  if (mode === "create" && !existingSpecimenSnapshot.empty) {
     throw new Error("A specimen with this accession number already exists.");
   }
+
+  if (mode === "update" && existingSpecimenSnapshot.empty) {
+    throw new Error("Specimen to update was not found.");
+  }
+
+  const existingSpecimenDoc = existingSpecimenSnapshot.docs.at(0);
+  const existingSpecimenData = existingSpecimenDoc?.data() as SpecimenDoc | undefined;
 
   const speciesIdResult = await findExistingSpeciesId(input.species);
   const locationIdResult = await findExistingLocationId(input.location);
@@ -277,7 +292,9 @@ export async function saveSpecimenEntry(input: SaveSpecimenInput): Promise<numbe
     return collectorId;
   });
 
-  const [specimenId] = await getNextNumericIds("specimens", "specimen_id", 1);
+  const [nextSpecimenId] = await getNextNumericIds("specimens", "specimen_id", 1);
+  const specimenId = existingSpecimenData?.specimen_id ?? nextSpecimenId;
+  const specimenDocumentId = existingSpecimenDoc?.id ?? String(specimenId);
   const batch = writeBatch(db);
 
   if (speciesIdResult === null) {
@@ -317,7 +334,7 @@ export async function saveSpecimenEntry(input: SaveSpecimenInput): Promise<numbe
     });
   });
 
-  batch.set(doc(db, "specimens", String(specimenId)), {
+  batch.set(doc(db, "specimens", specimenDocumentId), {
     specimen_id: specimenId,
     accesssion_no: normalizedAccessionNo,
     species_id: speciesId,

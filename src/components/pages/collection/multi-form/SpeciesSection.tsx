@@ -25,6 +25,7 @@ type Props = {
   conservationOptions: readonly string[];
   nativityOptions: readonly string[];
   onFieldChange: (key: keyof FormValues, value: string) => void;
+  isAccessionReadOnly?: boolean;
 };
 
 function SpeciesSection({
@@ -34,6 +35,7 @@ function SpeciesSection({
   conservationOptions,
   nativityOptions,
   onFieldChange,
+  isAccessionReadOnly = false,
 }: Props) {
   const filteredFamilyOptions = useMemo(() => {
     const query = values.family.trim().toLowerCase();
@@ -58,6 +60,8 @@ function SpeciesSection({
           className="h-10"
           placeholder="e.g. PLM-2026-001"
           value={values.accesssion_no}
+          readOnly={isAccessionReadOnly}
+          disabled={isAccessionReadOnly}
           onChange={(event) => onFieldChange("accesssion_no", event.target.value)}
         />
       </FieldBlock>

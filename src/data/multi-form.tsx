@@ -157,9 +157,23 @@ type SuccessSubmissionSummary = {
   collectors: string;
 };
 
-export function MultiForm() {
+type MultiFormProps = {
+  mode?: "create" | "update";
+  initialValues?: FormValues;
+  isAccessionReadOnly?: boolean;
+};
+
+export function MultiForm({
+  mode = "create",
+  initialValues: providedInitialValues,
+  isAccessionReadOnly = false,
+}: MultiFormProps = {}) {
+  const resolvedInitialValues = useMemo(
+    () => providedInitialValues ?? initialValues,
+    [providedInitialValues],
+  );
   const [currentStep, setCurrentStep] = useState(0);
-  const [values, setValues] = useState<FormValues>(initialValues);
+  const [values, setValues] = useState<FormValues>(resolvedInitialValues);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
@@ -214,6 +228,14 @@ export function MultiForm() {
       window.clearTimeout(timerId);
     };
   }, [successSummary]);
+
+  useEffect(() => {
+    setValues(resolvedInitialValues);
+    setErrors({});
+    setSubmitMessage("");
+    setSuccessSummary(null);
+    setCurrentStep(0);
+  }, [resolvedInitialValues]);
 
   const isLastStep = currentStep === steps.length - 1;
   const progress = useMemo(
@@ -516,7 +538,7 @@ export function MultiForm() {
           leaf_description: specimenCheck.data.leaf_description,
           notes: specimenCheck.data.notes,
         },
-      });
+      }, { mode });
 
       const collectorNames = collectorPayload.map((collector) => collector.name).join(", ");
 
@@ -526,9 +548,11 @@ export function MultiForm() {
         collectors: collectorNames,
       });
       setSubmitMessage("");
-      setValues(initialValues);
-      setErrors({});
-      setCurrentStep(0);
+      if (mode === "create") {
+        setValues(initialValues);
+        setErrors({});
+        setCurrentStep(0);
+      }
     } catch (error) {
       const message =
         error instanceof Error
@@ -612,6 +636,7 @@ export function MultiForm() {
                 conservationOptions={conservationOptions}
                 nativityOptions={nativityOptions}
                 onFieldChange={setField}
+                isAccessionReadOnly={isAccessionReadOnly}
               />
             )}
 
@@ -671,7 +696,13 @@ export function MultiForm() {
           </Button>
         ) : (
           <Button type="button" onClick={handleSubmitClick} disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : "Submit Specimen"}
+            {isSubmitting
+              ? mode === "update"
+                ? "Saving changes..."
+                : "Submitting..."
+              : mode === "update"
+                ? "Save Changes"
+                : "Submit Specimen"}
           </Button>
         )}
       </CardFooter>
@@ -686,7 +717,11 @@ export function MultiForm() {
         <div className="fixed bottom-4 right-4 z-50 w-[min(92vw,420px)] rounded-lg border border-emerald-300 bg-white p-4 shadow-xl">
           <div className="mb-2 flex items-center gap-2 text-emerald-700">
             <Check className="size-4" />
-            <p className="text-sm font-semibold">Specimen submitted successfully</p>
+            <p className="text-sm font-semibold">
+              {mode === "update"
+                ? "Specimen updated successfully"
+                : "Specimen submitted successfully"}
+            </p>
           </div>
           <div className="space-y-1 text-sm text-slate-700">
             <p>
