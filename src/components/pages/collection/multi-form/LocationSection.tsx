@@ -19,9 +19,17 @@ type Props = {
   onFieldChange: (key: keyof FormValues, value: string) => void;
 };
 
+const DECIMAL_COORDINATE_PATTERN = /^-?\d*(\.\d*)?$/;
+
 function LocationSection({ values, errors, onFieldChange }: Props) {
   const [provinceQuery, setProvinceQuery] = useState(values.province);
   const [regionQuery, setRegionQuery] = useState(values.region);
+
+  useEffect(() => {
+    if (values.country !== "Philippines") {
+      onFieldChange("country", "Philippines");
+    }
+  }, [onFieldChange, values.country]);
 
   useEffect(() => {
     setProvinceQuery(values.province);
@@ -52,6 +60,14 @@ function LocationSection({ values, errors, onFieldChange }: Props) {
       region.toLowerCase().includes(normalizedQuery),
     );
   }, [regionQuery]);
+
+  const handleCoordinateChange = (key: "latitude" | "longitude", value: string) => {
+    if (!DECIMAL_COORDINATE_PATTERN.test(value)) {
+      return;
+    }
+
+    onFieldChange(key, value);
+  };
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -138,18 +154,24 @@ function LocationSection({ values, errors, onFieldChange }: Props) {
         <Input
           id="latitude"
           className="h-10"
+          inputMode="decimal"
+          placeholder="e.g. 14.5995"
           value={values.latitude}
-          onChange={(event) => onFieldChange("latitude", event.target.value)}
+          onChange={(event) => handleCoordinateChange("latitude", event.target.value)}
         />
+        <p className="text-xs text-muted-foreground">Decimal degrees, range: -90 to 90</p>
       </FieldBlock>
 
       <FieldBlock label="Longitude" htmlFor="longitude" error={errors.longitude}>
         <Input
           id="longitude"
           className="h-10"
+          inputMode="decimal"
+          placeholder="e.g. 120.9842"
           value={values.longitude}
-          onChange={(event) => onFieldChange("longitude", event.target.value)}
+          onChange={(event) => handleCoordinateChange("longitude", event.target.value)}
         />
+        <p className="text-xs text-muted-foreground">Decimal degrees, range: -180 to 180</p>
       </FieldBlock>
     </div>
   );

@@ -244,6 +244,27 @@ export function MultiForm() {
         return false;
       }
 
+      const rangeErrors: FormErrors = {};
+
+      if (
+        typeof parsed.data.latitude === "number" &&
+        (parsed.data.latitude < -90 || parsed.data.latitude > 90)
+      ) {
+        rangeErrors.latitude = "Latitude must be between -90 and 90.";
+      }
+
+      if (
+        typeof parsed.data.longitude === "number" &&
+        (parsed.data.longitude < -180 || parsed.data.longitude > 180)
+      ) {
+        rangeErrors.longitude = "Longitude must be between -180 and 180.";
+      }
+
+      if (Object.keys(rangeErrors).length > 0) {
+        setErrors((prev) => ({ ...prev, ...rangeErrors }));
+        return false;
+      }
+
       return true;
     }
 
