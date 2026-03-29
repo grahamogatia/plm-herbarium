@@ -1,6 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import { CalendarDays, Hash, ImageOff, Leaf, MapPin, UserRound } from "lucide-react";
+import { CalendarDays, Hash, ImageOff, Leaf, MapPin, Pencil, Trash2, UserRound } from "lucide-react";
 import type { CollectionRow } from "@/api/collection";
+import { Button } from "@/components/ui/button";
 
 export const specimenColumns: ColumnDef<CollectionRow>[] = [
   {
@@ -80,10 +81,34 @@ export const specimenColumns: ColumnDef<CollectionRow>[] = [
         Locality
       </span>
     ),
-    cell: ({ getValue }) => (
-      <span className="inline-flex items-center text-zinc-700">
-        <span className="max-w-52 truncate">{String(getValue() ?? "-")}</span>
-      </span>
+    cell: ({ getValue, row }) => (
+      <div className="relative flex w-full min-w-55 items-center pr-20 text-zinc-700">
+        <span className="truncate">{String(getValue() ?? "-")}</span>
+
+        <div
+          data-row-actions
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-center gap-1 bg-linear-to-l from-white via-white to-transparent pl-6 opacity-0 transition-opacity duration-150 group-hover/row:pointer-events-auto group-hover/row:opacity-100 group-focus-within/row:pointer-events-auto group-focus-within/row:opacity-100"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <Button
+            variant="outline"
+            size="icon-xs"
+            aria-label={`Update specimen ${row.original.accessionNo}`}
+            title="Update"
+          >
+            <Pencil aria-hidden="true" />
+          </Button>
+          <Button
+            variant="destructive"
+            className="bg-red-700"
+            size="icon-xs"
+            aria-label={`Delete specimen ${row.original.accessionNo}`}
+            title="Delete"
+          >
+            <Trash2 aria-hidden="true" />
+          </Button>
+        </div>
+      </div>
     ),
   },
 ];

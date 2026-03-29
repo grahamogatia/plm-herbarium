@@ -121,3 +121,11 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  [data-slot="table-row"]:hover [data-row-actions],
+  [data-slot="table-row"]:focus-within [data-row-actions] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
