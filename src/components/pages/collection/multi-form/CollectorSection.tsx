@@ -1,7 +1,13 @@
 import { Minus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 
 import FieldBlock from "./FieldBlock";
 import type { FormErrors, FormValues } from "./types";
@@ -9,6 +15,7 @@ import type { FormErrors, FormValues } from "./types";
 type Props = {
   values: FormValues;
   errors: FormErrors;
+  collectorOptions: string[];
   onCollectorNameChange: (index: number, value: string) => void;
   onAddCollector: () => void;
   onRemoveCollector: (index: number) => void;
@@ -17,6 +24,7 @@ type Props = {
 function CollectorSection({
   values,
   errors,
+  collectorOptions,
   onCollectorNameChange,
   onAddCollector,
   onRemoveCollector,
@@ -28,18 +36,52 @@ function CollectorSection({
         htmlFor="collectorName"
         error={errors.collector_names}
       >
+        <p className="text-xs text-muted-foreground">
+          Format: A. Surname or A. B. Surname
+        </p>
         <div className="space-y-2">
           {values.collector_names.map((collectorName, index) => (
             <div key={`collector-${index}`} className="flex items-center gap-2">
-              <Input
-                id={`collectorName-${index}`}
-                className="h-10"
-                value={collectorName}
-                onChange={(event) =>
-                  onCollectorNameChange(index, event.target.value)
+              <Combobox
+                value={collectorName || null}
+                inputValue={collectorName}
+                onInputValueChange={(inputValue) =>
+                  onCollectorNameChange(index, inputValue)
                 }
-                placeholder={`e.g. Collector ${index + 1}`}
-              />
+                onValueChange={(value) => onCollectorNameChange(index, value ?? "")}
+              >
+                <ComboboxInput
+                  id={`collectorName-${index}`}
+                  className="h-10 w-full"
+                  placeholder="e.g. A. B. Dela Cruz"
+                  showClear
+                />
+                <ComboboxContent>
+                  <ComboboxList>
+                    {collectorName.trim() !== "" &&
+                    collectorOptions.filter((existingCollector) =>
+                      existingCollector
+                        .toLowerCase()
+                        .includes(collectorName.trim().toLowerCase()),
+                    ).length === 0 ? (
+                      <div className="px-2 py-2 text-sm text-muted-foreground">
+                        No matching collector found. Keep typing to add a new one.
+                      </div>
+                    ) : null}
+                    {collectorOptions
+                      .filter((existingCollector) =>
+                        existingCollector
+                          .toLowerCase()
+                          .includes(collectorName.trim().toLowerCase()),
+                      )
+                      .map((existingCollector) => (
+                        <ComboboxItem key={existingCollector} value={existingCollector}>
+                          {existingCollector}
+                        </ComboboxItem>
+                      ))}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
               <Button
                 type="button"
                 variant="outline"

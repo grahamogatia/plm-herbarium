@@ -546,6 +546,26 @@ export async function getSpeciesFamilies(): Promise<string[]> {
   return Array.from(familySet).sort((a, b) => a.localeCompare(b));
 }
 
+export async function getCollectorNames(): Promise<string[]> {
+  const collectorsSnapshot = await getDocs(collection(db, "collectors"));
+
+  const collectorNameSet = new Set<string>();
+
+  collectorsSnapshot.docs.forEach((collectorDoc) => {
+    const collectorName = collectorDoc.data()?.name;
+    if (typeof collectorName !== "string") {
+      return;
+    }
+
+    const normalizedCollectorName = normalizeText(collectorName);
+    if (normalizedCollectorName) {
+      collectorNameSet.add(normalizedCollectorName);
+    }
+  });
+
+  return Array.from(collectorNameSet).sort((a, b) => a.localeCompare(b));
+}
+
 export async function getCollectorByCollectorId(
   collectorId: number,
 ): Promise<Collector | null> {

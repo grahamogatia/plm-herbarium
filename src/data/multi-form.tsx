@@ -25,7 +25,11 @@ import DetailsSection from "@/components/pages/collection/multi-form/DetailsSect
 import LocationSection from "@/components/pages/collection/multi-form/LocationSection";
 import ReviewSection from "@/components/pages/collection/multi-form/ReviewSection";
 import SpeciesSection from "@/components/pages/collection/multi-form/SpeciesSection";
-import { getSpeciesFamilies, saveSpecimenEntry } from "@/api/collection";
+import {
+  getCollectorNames,
+  getSpeciesFamilies,
+  saveSpecimenEntry,
+} from "@/api/collection";
 import type { FormErrors, FormValues } from "@/components/pages/collection/multi-form/types";
 import {
   CollectorSchema,
@@ -130,6 +134,9 @@ const parseOptionalNumber = (value: string): number | undefined =>
 const parseNullableNumber = (value: string): number | null =>
   value.trim() === "" ? null : Number(value);
 
+const collectorNameFormatPattern =
+  /^(?:\p{Lu}\.\s)+(?:\p{L}[\p{L}'-]*)(?:\s+\p{L}[\p{L}'-]*)*$/u;
+
 const issueMap = (error: z.ZodError): FormErrors => {
   const mappedErrors: FormErrors = {};
 
@@ -159,24 +166,35 @@ export function MultiForm() {
   const [successSummary, setSuccessSummary] =
     useState<SuccessSubmissionSummary | null>(null);
   const [familyOptions, setFamilyOptions] = useState<string[]>([]);
+  const [collectorOptions, setCollectorOptions] = useState<string[]>([]);
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadFamilies = async () => {
+    const loadLookups = async () => {
       try {
-        const families = await getSpeciesFamilies();
-        if (isMounted) {
-          setFamilyOptions(families);
+        const [families, collectors] = await Promise.all([
+          getSpeciesFamilies(),
+          getCollectorNames(),
+        ]);
+
+        if (!isMounted) {
+          return;
         }
+
+        setFamilyOptions(families);
+        setCollectorOptions(collectors);
       } catch {
-        if (isMounted) {
-          setFamilyOptions([]);
+        if (!isMounted) {
+          return;
         }
+
+        setFamilyOptions([]);
+        setCollectorOptions([]);
       }
     };
 
-    void loadFamilies();
+    void loadLookups();
 
     return () => {
       isMounted = false;
@@ -281,7 +299,7 @@ export function MultiForm() {
         return false;
       }
 
-      const invalidCollector = normalizedCollectorNames.some((collectorName) => {
+      const hasInvalidCollectorSchema = normalizedCollectorNames.some((collectorName) => {
         const parsed = collectorStepSchema.safeParse({
           name: collectorName,
         });
@@ -289,10 +307,15 @@ export function MultiForm() {
         return !parsed.success;
       });
 
-      if (invalidCollector) {
+      const hasInvalidCollectorFormat = normalizedCollectorNames.some(
+        (collectorName) => !collectorNameFormatPattern.test(collectorName),
+      );
+
+      if (hasInvalidCollectorSchema || hasInvalidCollectorFormat) {
         setErrors((prev) => ({
           ...prev,
-          collector_names: "One or more collector names are invalid.",
+          collector_names:
+            "Use format: I. Surname or I. I. Surname (e.g., A. Dela Cruz or A. B. Dela Cruz).",
         }));
         return false;
       }
@@ -604,6 +627,7 @@ export function MultiForm() {
               <CollectorSection
                 values={values}
                 errors={errors}
+                collectorOptions={collectorOptions}
                 onCollectorNameChange={handleCollectorNameChange}
                 onAddCollector={handleAddCollector}
                 onRemoveCollector={handleRemoveCollector}
