@@ -1,4 +1,14 @@
 import { Input } from "@/components/ui/input";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
+import { PROVINCE_OPTIONS } from "@/data/provinces";
+import { REGION_OPTIONS } from "@/data/regions";
 
 import FieldBlock from "./FieldBlock";
 import type { FormErrors, FormValues } from "./types";
@@ -10,6 +20,39 @@ type Props = {
 };
 
 function LocationSection({ values, errors, onFieldChange }: Props) {
+  const [provinceQuery, setProvinceQuery] = useState(values.province);
+  const [regionQuery, setRegionQuery] = useState(values.region);
+
+  useEffect(() => {
+    setProvinceQuery(values.province);
+  }, [values.province]);
+
+  useEffect(() => {
+    setRegionQuery(values.region);
+  }, [values.region]);
+
+  const filteredProvinceOptions = useMemo(() => {
+    const normalizedQuery = provinceQuery.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return PROVINCE_OPTIONS;
+    }
+
+    return PROVINCE_OPTIONS.filter((province) =>
+      province.toLowerCase().includes(normalizedQuery),
+    );
+  }, [provinceQuery]);
+
+  const filteredRegionOptions = useMemo(() => {
+    const normalizedQuery = regionQuery.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return REGION_OPTIONS;
+    }
+
+    return REGION_OPTIONS.filter((region) =>
+      region.toLowerCase().includes(normalizedQuery),
+    );
+  }, [regionQuery]);
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <FieldBlock label="Country" htmlFor="country" error={errors.country}>
@@ -32,21 +75,63 @@ function LocationSection({ values, errors, onFieldChange }: Props) {
       </FieldBlock>
 
       <FieldBlock label="Province" htmlFor="province" error={errors.province}>
-        <Input
-          id="province"
-          className="h-10"
-          value={values.province}
-          onChange={(event) => onFieldChange("province", event.target.value)}
-        />
+        <Combobox
+          value={values.province || null}
+          inputValue={provinceQuery}
+          onInputValueChange={(inputValue) => setProvinceQuery(inputValue)}
+          onValueChange={(value) => onFieldChange("province", value ?? "")}
+        >
+          <ComboboxInput
+            id="province"
+            className="h-10 w-full"
+            placeholder="Select province"
+            showClear
+          />
+          <ComboboxContent>
+            <ComboboxList>
+              {provinceQuery.trim() !== "" && filteredProvinceOptions.length === 0 ? (
+                <div className="px-2 py-2 text-sm text-muted-foreground">
+                  No matching province found.
+                </div>
+              ) : null}
+              {filteredProvinceOptions.map((province) => (
+                <ComboboxItem key={province} value={province}>
+                  {province}
+                </ComboboxItem>
+              ))}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
       </FieldBlock>
 
       <FieldBlock label="Region" htmlFor="region" error={errors.region}>
-        <Input
-          id="region"
-          className="h-10"
-          value={values.region}
-          onChange={(event) => onFieldChange("region", event.target.value)}
-        />
+        <Combobox
+          value={values.region || null}
+          inputValue={regionQuery}
+          onInputValueChange={(inputValue) => setRegionQuery(inputValue)}
+          onValueChange={(value) => onFieldChange("region", value ?? "")}
+        >
+          <ComboboxInput
+            id="region"
+            className="h-10 w-full"
+            placeholder="Select region"
+            showClear
+          />
+          <ComboboxContent>
+            <ComboboxList>
+              {regionQuery.trim() !== "" && filteredRegionOptions.length === 0 ? (
+                <div className="px-2 py-2 text-sm text-muted-foreground">
+                  No matching region found.
+                </div>
+              ) : null}
+              {filteredRegionOptions.map((region) => (
+                <ComboboxItem key={region} value={region}>
+                  {region}
+                </ComboboxItem>
+              ))}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
       </FieldBlock>
 
       <FieldBlock label="Latitude" htmlFor="latitude" error={errors.latitude}>
