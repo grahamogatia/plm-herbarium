@@ -9,6 +9,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { db } from "@/api/database";
+import { writeLog } from "@/api/logs";
 import { SpecimenSchema } from "@/data/schemas";
 import type { Specimen, Species, Collector, Location } from "@/data/types";
 
@@ -65,6 +66,7 @@ type SaveSpecimenInput = {
 
 type SaveSpecimenOptions = {
   mode?: "create" | "update";
+  performedBy?: string;
 };
 
 function mapSpecimenToRow(
@@ -218,6 +220,7 @@ export async function saveSpecimenEntry(
   options: SaveSpecimenOptions = {},
 ): Promise<number> {
   const mode = options.mode ?? "create";
+  const performedBy = options.performedBy ?? "unknown";
   const normalizedAccessionNo = normalizeText(input.specimen.accesssion_no);
 
   const matchingSpecimenSnapshot = await getDocs(
@@ -364,6 +367,14 @@ export async function saveSpecimenEntry(
 
   await batch.commit();
 
+  const accession = normalizedAccessionNo;
+  const scientificName = input.species.scientific_name;
+  if (mode === "create") {
+    await writeLog("specimen_create", performedBy, `Created specimen ${accession} (${scientificName})`);
+  } else {
+    await writeLog("specimen_update", performedBy, `Updated specimen ${accession} (${scientificName})`);
+  }
+
   collectionRowsCache = null;
   collectionRowsCacheTimestamp = 0;
 
@@ -372,6 +383,8 @@ export async function saveSpecimenEntry(
 
 export async function softDeleteSpecimenByAccession(
   accessionNo: string,
+  performedBy = "unknown",
+  scientificName = "",
 ): Promise<void> {
   const normalizedAccessionNo = accessionNo.trim();
   if (!normalizedAccessionNo) {
@@ -394,6 +407,8 @@ export async function softDeleteSpecimenByAccession(
   await updateDoc(specimenDoc.ref, {
     isDeleted: true,
   });
+
+  await writeLog("specimen_delete", performedBy, `Deleted specimen ${normalizedAccessionNo}${scientificName ? ` (${scientificName})` : ""}`);
 
   collectionRowsCache = null;
   collectionRowsCacheTimestamp = 0;

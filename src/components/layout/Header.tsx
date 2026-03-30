@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 function Header() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, isAdmin, logout } = useAuth();
 
   const navButtonClass = (isActive: boolean) =>
     `cursor-pointer transition-colors underline-offset-4 ${
@@ -17,6 +17,7 @@ function Header() {
 
   const isHomePage = location.pathname === "/home" || location.pathname === "/";
   const isCollectionPage = location.pathname.startsWith("/collections");
+  const isAdminPage = location.pathname.startsWith("/admin");
 
   async function handleLogout() {
     await logout();
@@ -41,10 +42,15 @@ function Header() {
           <button className={navButtonClass(isCollectionPage)} onClick={() => navigate("/collections")}>
             Collection
           </button>
+          {isAdmin && (
+            <button className={navButtonClass(isAdminPage)} onClick={() => navigate("/admin")}>
+              Admin
+            </button>
+          )}
         </nav>
       </div>
       {currentUser ? (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <span className="text-sm text-zinc-500">{currentUser.email}</span>
           <Button variant="outline" size="sm" onClick={handleLogout}>
             Logout

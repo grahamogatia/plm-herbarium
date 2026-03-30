@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { z } from "zod";
 import {
   Check,
@@ -168,6 +169,7 @@ export function MultiForm({
   initialValues: providedInitialValues,
   isAccessionReadOnly = false,
 }: MultiFormProps = {}) {
+  const { currentUser } = useAuth();
   const resolvedInitialValues = useMemo(
     () => providedInitialValues ?? initialValues,
     [providedInitialValues],
@@ -538,7 +540,7 @@ export function MultiForm({
           leaf_description: specimenCheck.data.leaf_description,
           notes: specimenCheck.data.notes,
         },
-      }, { mode });
+      }, { mode, performedBy: currentUser?.email ?? "unknown" });
 
       const collectorNames = collectorPayload.map((collector) => collector.name).join(", ");
 

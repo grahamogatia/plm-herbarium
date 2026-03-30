@@ -2,12 +2,14 @@ import "./App.css";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import Header from "./components/layout/Header";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
+import AdminRoute from "./components/layout/AdminRoute";
 import Home from "./pages/Home";
 import Collection from "./pages/Collection";
 import CollectionDetails from "./components/pages/collection/Specimen.tsx";
 import AddSpecimenPage from "./pages/AddSpecimenPage.tsx";
 import UpdateSpecimenPage from "./pages/UpdateSpecimenPage.tsx";
 import LoginPage from "./pages/LoginPage.tsx";
+import AdminPage from "./pages/AdminPage.tsx";
 
 function AppLayout() {
   return (
@@ -34,6 +36,10 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/collections/add-specimen" element={<AddSpecimenPage />} />
           <Route path="/collections/update/:accessionNo" element={<UpdateSpecimenPage />} />
+        </Route>
+        {/* Admin-only routes */}
+        <Route element={<AdminRoute />}>
+          <Route path="/admin" element={<AdminPage />} />
         </Route>
       </Route>
     </Routes>

@@ -2,6 +2,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { CalendarDays, Hash, ImageOff, Leaf, MapPin, Pencil, Trash2, UserRound } from "lucide-react";
 import { useState } from "react";
 import { softDeleteSpecimenByAccession, type CollectionRow } from "@/api/collection";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import {
@@ -23,11 +24,12 @@ type DeleteSpecimenButtonProps = {
 
 function DeleteSpecimenButton({ row, onDeleted }: DeleteSpecimenButtonProps) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const { currentUser } = useAuth();
 
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      await softDeleteSpecimenByAccession(row.accessionNo);
+      await softDeleteSpecimenByAccession(row.accessionNo, currentUser?.email ?? "unknown", row.taxon);
       onDeleted?.(row);
     } catch (error) {
       const message =
