@@ -7,14 +7,12 @@ import type { FormErrors, FormValues } from "./types";
 type Props = {
   values: FormValues;
   errors: FormErrors;
-  habitOptions: readonly string[];
   onFieldChange: (key: keyof FormValues, value: string) => void;
 };
 
 function DetailsSection({
   values,
   errors,
-  habitOptions,
   onFieldChange,
 }: Props) {
   return (
@@ -33,21 +31,17 @@ function DetailsSection({
         />
       </FieldBlock>
 
-      <FieldBlock label="Habit" htmlFor="habit" error={errors.habit}>
-        <select
-          id="habit"
-          className="border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full rounded-md border px-3 text-sm"
-          value={values.habit}
-          onChange={(event) => onFieldChange("habit", event.target.value)}
-        >
-          <option value="">Select habit</option>
-          {habitOptions.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      </FieldBlock>
+      <div className="sm:col-span-2">
+        <FieldBlock label="Habit" htmlFor="habit" error={errors.habit}>
+          <Textarea
+            id="habit"
+            className="min-h-20"
+            placeholder="e.g. Tree with spreading canopy"
+            value={values.habit}
+            onChange={(event) => onFieldChange("habit", event.target.value)}
+          />
+        </FieldBlock>
+      </div>
 
       <div className="sm:col-span-2">
         <FieldBlock label="Habitat" htmlFor="habitat" error={errors.habitat}>
@@ -67,6 +61,11 @@ function DetailsSection({
       >
         <Input
           id="altitude"
+          type="number"
+          inputMode="decimal"
+          min="0"
+          step="1"
+          placeholder="e.g. 1200"
           className="h-10"
           value={values.altitude_masl}
           onChange={(event) => onFieldChange("altitude_masl", event.target.value)}
@@ -80,6 +79,11 @@ function DetailsSection({
       >
         <Input
           id="height"
+          type="number"
+          inputMode="decimal"
+          min="0"
+          step="0.01"
+          placeholder="e.g. 12.5"
           className="h-10"
           value={values.plant_height_m}
           onChange={(event) => onFieldChange("plant_height_m", event.target.value)}
@@ -89,6 +93,11 @@ function DetailsSection({
       <FieldBlock label="DBH (cm)" htmlFor="dbh" error={errors.dbh_cm}>
         <Input
           id="dbh"
+          type="number"
+          inputMode="decimal"
+          min="0"
+          step="0.1"
+          placeholder="e.g. 30.5 (optional)"
           className="h-10"
           value={values.dbh_cm}
           onChange={(event) => onFieldChange("dbh_cm", event.target.value)}

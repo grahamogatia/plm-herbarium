@@ -41,7 +41,6 @@ import {
 
 const conservationOptions = SpeciesSchema.shape.conservation_status.options;
 const nativityOptions = SpeciesSchema.shape.nativity.options;
-const habitOptions = SpecimenSchema.shape.habit.options;
 
 const initialValues: FormValues = {
   accesssion_no: "",
@@ -665,7 +664,6 @@ export function MultiForm({
               <DetailsSection
                 values={values}
                 errors={errors}
-                habitOptions={habitOptions}
                 onFieldChange={setField}
               />
             )}

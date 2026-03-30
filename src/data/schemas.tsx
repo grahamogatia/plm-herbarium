@@ -10,7 +10,7 @@ export const SpecimenSchema = z.object({
 
   date_collected: z.date(),
   habitat: z.string(),
-  habit: z.enum(["tree", "shrub", "herb", "vine", "epiphyte"]),
+  habit: z.string().min(1, "Habit is required."),
 
   altitude_masl: z.number(),
   plant_height_m: z.number(),

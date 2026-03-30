@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useEffect, useMemo, useState } from "react";
 import {
   Combobox,
@@ -71,24 +72,29 @@ function LocationSection({ values, errors, onFieldChange }: Props) {
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <FieldBlock label="Country" htmlFor="country" error={errors.country}>
-        <Input
-          id="country"
-          className="h-10"
-          value="Philippines"
-          readOnly
-          disabled
-        />
-      </FieldBlock>
+      <div className="sm:col-span-2">
+        <FieldBlock label="Country" htmlFor="country" error={errors.country}>
+          <Input
+            id="country"
+            className="h-10"
+            value="Philippines"
+            readOnly
+            disabled
+          />
+        </FieldBlock>
+      </div>
 
-      <FieldBlock label="Locality" htmlFor="locality" error={errors.locality}>
-        <Input
-          id="locality"
-          className="h-10"
-          value={values.locality}
-          onChange={(event) => onFieldChange("locality", event.target.value)}
-        />
-      </FieldBlock>
+      <div className="sm:col-span-2">
+        <FieldBlock label="Locality" htmlFor="locality" error={errors.locality}>
+          <Textarea
+            id="locality"
+            className="min-h-20"
+            placeholder="e.g. Along the trail to Mt. Apo, Barangay X, 2km NW of the ranger station"
+            value={values.locality}
+            onChange={(event) => onFieldChange("locality", event.target.value)}
+          />
+        </FieldBlock>
+      </div>
 
       <FieldBlock label="Province" htmlFor="province" error={errors.province}>
         <Combobox

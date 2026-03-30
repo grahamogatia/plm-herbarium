@@ -18,6 +18,16 @@ import {
 import FieldBlock from "./FieldBlock";
 import type { FormErrors, FormValues } from "./types";
 
+const CONSERVATION_LABELS: Record<string, string> = {
+  EX: "EX – Extinct",
+  EW: "EW – Extinct in the Wild",
+  CE: "CE – Critically Endangered",
+  EN: "EN – Endangered",
+  VU: "VU – Vulnerable",
+  NT: "NT – Near Threatened",
+  LC: "LC – Least Concern",
+};
+
 type Props = {
   values: FormValues;
   errors: FormErrors;
@@ -139,7 +149,7 @@ function SpeciesSection({
           <SelectContent>
             {conservationOptions.map((option) => (
               <SelectItem key={option} value={option}>
-                {option}
+                {CONSERVATION_LABELS[option] ?? option}
               </SelectItem>
             ))}
           </SelectContent>
