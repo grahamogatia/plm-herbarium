@@ -1,10 +1,12 @@
 import { Leaf } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
 
 function Header() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { currentUser, logout } = useAuth();
 
   const navButtonClass = (isActive: boolean) =>
     `cursor-pointer transition-colors underline-offset-4 ${
@@ -15,6 +17,11 @@ function Header() {
 
   const isHomePage = location.pathname === "/home" || location.pathname === "/";
   const isCollectionPage = location.pathname.startsWith("/collections");
+
+  async function handleLogout() {
+    await logout();
+    navigate("/login", { replace: true });
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full h-14 px-6 flex items-center justify-between bg-white">
@@ -36,7 +43,18 @@ function Header() {
           </button>
         </nav>
       </div>
-      <Button className="bg-lime-800 text-zinc-50">Login</Button>
+      {currentUser ? (
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-zinc-500">{currentUser.email}</span>
+          <Button variant="outline" size="sm" onClick={handleLogout}>
+            Logout
+          </Button>
+        </div>
+      ) : (
+        <Button className="bg-lime-800 text-zinc-50" onClick={() => navigate("/login")}>
+          Login
+        </Button>
+      )}
     </header>
   );
 }
