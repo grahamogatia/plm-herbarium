@@ -85,7 +85,7 @@ function LocationSection({ values, errors, onFieldChange }: Props) {
       </div>
 
       <div className="sm:col-span-2">
-        <FieldBlock label="Locality" htmlFor="locality" error={errors.locality}>
+        <FieldBlock label="Locality" htmlFor="locality" error={errors.locality} required>
           <Textarea
             id="locality"
             className="min-h-20"
@@ -126,7 +126,7 @@ function LocationSection({ values, errors, onFieldChange }: Props) {
         </Combobox>
       </FieldBlock>
 
-      <FieldBlock label="Region" htmlFor="region" error={errors.region}>
+      <FieldBlock label="Region" htmlFor="region" error={errors.region} required>
         <Combobox
           value={values.region || null}
           inputValue={regionQuery}

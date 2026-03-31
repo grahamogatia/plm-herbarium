@@ -30,8 +30,8 @@ export const SpeciesSchema = z.object({
   family: z.string(),
   scientific_name: z.string(),
   common_name: z.string().optional(),
-  conservation_status: z.enum(["EX", "EW", "CE", "EN", "VU", "NT", "LC"]),
-  nativity: z.enum(["Native", "Introduced", "Endemic"]),
+  conservation_status: z.enum(["EX", "EW", "CE", "EN", "VU", "NT", "LC"]).optional(),
+  nativity: z.enum(["Native", "Introduced", "Endemic"]).optional(),
 });
 
 export const CollectorSchema = z.object({

@@ -43,8 +43,8 @@ import {
   SpecimenSchema,
 } from "@/data/schemas";
 
-const conservationOptions = SpeciesSchema.shape.conservation_status.options;
-const nativityOptions = SpeciesSchema.shape.nativity.options;
+const conservationOptions = SpeciesSchema.shape.conservation_status.unwrap().options;
+const nativityOptions = SpeciesSchema.shape.nativity.unwrap().options;
 
 const initialValues: FormValues = {
   accesssion_no: "",
@@ -73,16 +73,19 @@ const initialValues: FormValues = {
 };
 
 const speciesStepSchema = z.object({
-  accesssion_no: SpecimenSchema.shape.accesssion_no,
-  scientific_name: SpeciesSchema.shape.scientific_name,
+  accesssion_no: SpecimenSchema.shape.accesssion_no.min(1, "Accession number is required."),
+  scientific_name: SpeciesSchema.shape.scientific_name.min(1, "Scientific name is required."),
   common_name: SpeciesSchema.shape.common_name,
-  family: SpeciesSchema.shape.family,
-  conservation_status: SpeciesSchema.shape.conservation_status,
-  nativity: SpeciesSchema.shape.nativity,
+  family: SpeciesSchema.shape.family.min(1, "Family is required."),
+  conservation_status: SpeciesSchema.shape.conservation_status.optional(),
+  nativity: SpeciesSchema.shape.nativity.optional(),
 });
 
 const locationStepSchema = LocationSchema.omit({
   location_id: true,
+}).extend({
+  locality: z.string().min(1, "Locality is required."),
+  region: z.string().min(1, "Region is required."),
 });
 
 const collectorStepSchema = CollectorSchema.omit({
@@ -100,6 +103,8 @@ const specimenDetailsStepSchema = SpecimenSchema.pick({
   fruit_description: true,
   leaf_description: true,
   notes: true,
+}).extend({
+  date_collected: z.date({ error: "Date collected is required." }),
 });
 
 const steps = [
@@ -271,8 +276,8 @@ export function MultiForm({
         scientific_name: values.scientific_name,
         common_name: values.common_name || undefined,
         family: values.family,
-        conservation_status: values.conservation_status,
-        nativity: values.nativity,
+        conservation_status: values.conservation_status || undefined,
+        nativity: values.nativity || undefined,
       });
 
       if (!parsed.success) {
@@ -360,8 +365,11 @@ export function MultiForm({
     }
 
     if (step === 3) {
+      const dateValue = values.date_collected
+        ? new Date(values.date_collected)
+        : undefined;
       const parsed = specimenDetailsStepSchema.safeParse({
-        date_collected: new Date(values.date_collected),
+        date_collected: dateValue,
         habitat: values.habitat,
         habit: values.habit,
         altitude_masl: parseNumber(values.altitude_masl),
@@ -461,8 +469,8 @@ export function MultiForm({
       family: values.family,
       scientific_name: values.scientific_name,
       common_name: values.common_name || undefined,
-      conservation_status: values.conservation_status,
-      nativity: values.nativity,
+      conservation_status: values.conservation_status || undefined,
+      nativity: values.nativity || undefined,
     };
 
     const location = {

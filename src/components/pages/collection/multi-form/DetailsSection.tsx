@@ -21,6 +21,7 @@ function DetailsSection({
         label="Date Collected"
         htmlFor="dateCollected"
         error={errors.date_collected}
+        required
       >
         <Input
           id="dateCollected"
@@ -32,7 +33,7 @@ function DetailsSection({
       </FieldBlock>
 
       <div className="sm:col-span-2">
-        <FieldBlock label="Habit" htmlFor="habit" error={errors.habit}>
+        <FieldBlock label="Habit" htmlFor="habit" error={errors.habit} required>
           <Textarea
             id="habit"
             className="min-h-20"

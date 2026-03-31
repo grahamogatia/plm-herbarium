@@ -35,6 +35,7 @@ function CollectorSection({
         label="Collector(s)"
         htmlFor="collectorName"
         error={errors.collector_names}
+        required
       >
         <p className="text-xs text-muted-foreground">
           Format: A. Surname or A. B. Surname

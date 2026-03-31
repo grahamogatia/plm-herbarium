@@ -316,11 +316,15 @@ export async function saveSpecimenEntry(
       species_id: speciesId,
       family: normalizeText(input.species.family),
       scientific_name: normalizeText(input.species.scientific_name),
-      common_name: input.species.common_name
-        ? normalizeText(input.species.common_name)
-        : undefined,
-      conservation_status: input.species.conservation_status,
-      nativity: input.species.nativity,
+      ...(input.species.common_name
+        ? { common_name: normalizeText(input.species.common_name) }
+        : {}),
+      ...(input.species.conservation_status
+        ? { conservation_status: input.species.conservation_status }
+        : {}),
+      ...(input.species.nativity
+        ? { nativity: input.species.nativity }
+        : {}),
     });
   }
 
@@ -331,8 +335,8 @@ export async function saveSpecimenEntry(
       locality: normalizeText(input.location.locality),
       province: normalizeText(input.location.province),
       region: normalizeText(input.location.region),
-      latitude: input.location.latitude,
-      longitude: input.location.longitude,
+      ...(input.location.latitude != null ? { latitude: input.location.latitude } : {}),
+      ...(input.location.longitude != null ? { longitude: input.location.longitude } : {}),
     });
   }
 
@@ -359,10 +363,10 @@ export async function saveSpecimenEntry(
     habit: input.specimen.habit,
     altitude_masl: input.specimen.altitude_masl,
     plant_height_m: input.specimen.plant_height_m,
-    dbh_cm: input.specimen.dbh_cm,
-    flower_description: input.specimen.flower_description,
-    fruit_description: input.specimen.fruit_description,
-    leaf_description: input.specimen.leaf_description,
+    dbh_cm: input.specimen.dbh_cm ?? null,
+    ...(input.specimen.flower_description ? { flower_description: input.specimen.flower_description } : {}),
+    ...(input.specimen.fruit_description ? { fruit_description: input.specimen.fruit_description } : {}),
+    ...(input.specimen.leaf_description ? { leaf_description: input.specimen.leaf_description } : {}),
     notes: input.specimen.notes,
   });
 

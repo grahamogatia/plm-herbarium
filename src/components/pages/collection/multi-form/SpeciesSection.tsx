@@ -64,6 +64,7 @@ function SpeciesSection({
         label="Accession Number"
         htmlFor="accessionNo"
         error={errors.accesssion_no}
+        required
       >
         <Input
           id="accessionNo"
@@ -80,6 +81,7 @@ function SpeciesSection({
         label="Scientific Name"
         htmlFor="scientificName"
         error={errors.scientific_name}
+        required
       >
         <Input
           id="scientificName"
@@ -104,7 +106,7 @@ function SpeciesSection({
         />
       </FieldBlock>
 
-      <FieldBlock label="Family" htmlFor="family" error={errors.family}>
+      <FieldBlock label="Family" htmlFor="family" error={errors.family} required>
         <Combobox
           value={values.family || null}
           inputValue={values.family}
