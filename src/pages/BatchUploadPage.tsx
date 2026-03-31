@@ -140,8 +140,8 @@ function parseFile(file: File): Promise<ParsedCSV | { message: string }> {
 
 // ── CSV → SaveSpecimenInput mapping & validation ─────────────────────────────
 
-const CONSERVATION_OPTIONS = SpeciesSchema.shape.conservation_status.options;
-const NATIVITY_OPTIONS = SpeciesSchema.shape.nativity.options;
+const CONSERVATION_OPTIONS = SpeciesSchema.shape.conservation_status.unwrap().options;
+const NATIVITY_OPTIONS = SpeciesSchema.shape.nativity.unwrap().options;
 
 type RowValidationResult =
   | { ok: true; input: Parameters<typeof saveSpecimenEntry>[0] }
