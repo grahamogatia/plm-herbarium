@@ -56,8 +56,14 @@ function BatchUploadPage() {
                 <p className="text-xs text-zinc-400">Download the template to ensure correct formatting.</p>
               </div>
             </div>
-            <Button variant="outline" size="sm" disabled>
-              Download Template
+            <Button asChild variant="outline" size="sm">
+              <a
+                href="https://docs.google.com/spreadsheets/d/1je8u-KbkMYna1B6zoBN7YPxZAXL9j_XoJPcwt5nss_c/edit?usp=sharing"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open Template
+              </a>
             </Button>
           </div>
 

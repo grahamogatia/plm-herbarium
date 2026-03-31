@@ -12,7 +12,6 @@ function BatchUpload() {
         <Button asChild variant="outline" size="sm">
             <Link to="/collections/batch-upload">
                 <Upload className="size-4" />
-                Batch Upload
             </Link>
         </Button>
     );
