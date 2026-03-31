@@ -13,8 +13,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TypographyH2 } from "@/components/ui/typography/typographyH2";
 import type { Specimen, Species, Collector, Location } from "@/data/types";
 import { ImageOff, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
+
+function SpecimenImageSpinner({ src }: { src: string }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <>
+      {!loaded && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center">
+          <Spinner className="size-8 text-zinc-500" />
+        </div>
+      )}
+      <img src={src} alt="" className="hidden" onLoad={() => setLoaded(true)} />
+    </>
+  );
+}
 
 function CollectionDetails() {
   const { accessionNo = "" } = useParams();
@@ -142,16 +157,19 @@ function CollectionDetails() {
               style={{ cursor: scale > 1 ? "grab" : "default", touchAction: "none" }}
             >
               {specimen?.photo_url ? (
-                <img
-                  src={specimen.photo_url}
-                  alt={species?.scientific_name ?? "Specimen"}
-                  className="max-h-full max-w-full object-contain select-none"
-                  draggable={false}
-                  style={{
-                    transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
-                    transition: isPanning.current ? "none" : "transform 0.15s ease-out",
-                  }}
-                />
+                <>
+                  <SpecimenImageSpinner src={specimen.photo_url} />
+                  <img
+                    src={specimen.photo_url}
+                    alt={species?.scientific_name ?? "Specimen"}
+                    className="max-h-full max-w-full object-contain select-none"
+                    draggable={false}
+                    style={{
+                      transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
+                      transition: isPanning.current ? "none" : "transform 0.15s ease-out",
+                    }}
+                  />
+                </>
               ) : (
                 <ImageOff
                   className="h-14 w-14 text-gray-500"

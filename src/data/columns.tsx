@@ -4,6 +4,7 @@ import { useState } from "react";
 import { softDeleteSpecimenByAccession, type CollectionRow } from "@/api/collection";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { Link } from "react-router-dom";
 import {
   AlertDialog,
@@ -21,13 +22,32 @@ type ImageCellProps = {
   row: CollectionRow;
 };
 
+function ImageCellImg({ src, alt }: { src: string; alt: string }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <>
+      {!loaded && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Spinner className="size-4 text-zinc-400" />
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={`h-full w-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+        onLoad={() => setLoaded(true)}
+      />
+    </>
+  );
+}
+
 function ImageCell({ row }: ImageCellProps) {
   const { currentUser } = useAuth();
 
   if (row.photoUrl) {
     return (
-      <div className="h-9 w-9 overflow-hidden rounded-md border border-zinc-200">
-        <img src={row.photoUrl} alt={row.taxon} className="h-full w-full object-cover" />
+      <div className="relative h-9 w-9 overflow-hidden rounded-md border border-zinc-200">
+        <ImageCellImg src={row.photoUrl} alt={row.taxon} />
       </div>
     );
   }
