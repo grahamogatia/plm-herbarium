@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight, CloudUpload, FileSpreadsheet, X } from "lucide-react";
+import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +10,9 @@ import {
   SheetHeader,
 } from "@/components/ui/sheet";
 import { TypographyH2 } from "@/components/ui/typography/typographyH2";
+import { saveSpecimenEntry } from "@/api/collection";
+import { SpeciesSchema, LocationSchema } from "@/data/schemas";
+import { useAuth } from "@/context/AuthContext";
 
 
 
@@ -134,6 +138,161 @@ function parseFile(file: File): Promise<ParsedCSV | { message: string }> {
   });
 }
 
+// ── CSV → SaveSpecimenInput mapping & validation ─────────────────────────────
+
+const CONSERVATION_OPTIONS = SpeciesSchema.shape.conservation_status.options;
+const NATIVITY_OPTIONS = SpeciesSchema.shape.nativity.options;
+
+type RowValidationResult =
+  | { ok: true; input: Parameters<typeof saveSpecimenEntry>[0] }
+  | { ok: false; errors: string[] };
+
+function csvRowToInput(
+  headers: string[],
+  row: string[],
+): RowValidationResult {
+  const get = (col: string) => {
+    const i = headers.indexOf(col);
+    return i >= 0 ? (row[i] ?? "").trim() : "";
+  };
+
+  const errors: string[] = [];
+
+  // ── Species fields ───────────────────────────────────────────────────────
+  const scientific_name = get("Scientific Name");
+  const family = get("Family");
+  const common_name = get("Common Name") || undefined;
+  const raw_conservation = get("Conservation Status").toUpperCase();
+  const raw_nativity = get("Nativity");
+
+  if (!scientific_name) errors.push("Scientific Name is required.");
+  if (!family) errors.push("Family is required.");
+
+  const conservation_status_result = z
+    .enum(CONSERVATION_OPTIONS)
+    .safeParse(raw_conservation);
+  if (!conservation_status_result.success)
+    errors.push(
+      `Conservation Status "${raw_conservation}" is not valid. Must be one of: ${CONSERVATION_OPTIONS.join(", ")}.`,
+    );
+
+  const nativity_result = z.enum(NATIVITY_OPTIONS).safeParse(raw_nativity);
+  if (!nativity_result.success)
+    errors.push(
+      `Nativity "${raw_nativity}" is not valid. Must be one of: ${NATIVITY_OPTIONS.join(", ")}.`,
+    );
+
+  // ── Location fields ──────────────────────────────────────────────────────
+  const locality = get("Locality");
+  const province = get("Province");
+  const region = get("Region");
+  const raw_lat = get("Latitude");
+  const raw_lng = get("Longitude");
+
+  if (!locality) errors.push("Locality is required.");
+  if (!province) errors.push("Province is required.");
+  if (!region) errors.push("Region is required.");
+
+  const latitude = raw_lat ? Number(raw_lat) : undefined;
+  const longitude = raw_lng ? Number(raw_lng) : undefined;
+  if (raw_lat && isNaN(latitude as number)) errors.push("Latitude must be a number.");
+  if (raw_lng && isNaN(longitude as number)) errors.push("Longitude must be a number.");
+
+  const locationResult = LocationSchema.omit({ location_id: true }).safeParse({
+    country: "Philippines",
+    locality,
+    province,
+    region,
+    latitude,
+    longitude,
+  });
+  if (!locationResult.success) {
+    locationResult.error.issues.forEach((e) => errors.push(e.message));
+  }
+
+  // ── Collector fields ─────────────────────────────────────────────────────
+  const raw_collectors = get("Collectors");
+  const collector_names = raw_collectors
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (collector_names.length === 0) errors.push("At least one Collector is required.");
+
+  // ── Specimen fields ──────────────────────────────────────────────────────
+  const accesssion_no = get("Accession Number");
+  if (!accesssion_no) errors.push("Accession Number is required.");
+
+  const raw_date = get("Date Collected (MM/DD/YYYY)");
+  let date_collected: Date | undefined;
+  if (!raw_date) {
+    errors.push("Date Collected is required.");
+  } else {
+    const parsed_date = new Date(raw_date);
+    if (isNaN(parsed_date.getTime())) {
+      errors.push(`Date Collected "${raw_date}" is not a valid date (use MM/DD/YYYY).`);
+    } else {
+      date_collected = parsed_date;
+    }
+  }
+
+  const habit = get("Habit");
+  const habitat = get("Habitat");
+  if (!habit) errors.push("Habit is required.");
+  if (!habitat) errors.push("Habitat is required.");
+
+  const raw_altitude = get("Altitude (MASL)");
+  const raw_height = get("Plant Height (M)");
+  const raw_dbh = get("DBH (CM)");
+
+  const altitude_masl = raw_altitude !== "" ? Number(raw_altitude) : NaN;
+  const plant_height_m = raw_height !== "" ? Number(raw_height) : NaN;
+  const dbh_cm = raw_dbh !== "" ? Number(raw_dbh) : null;
+
+  if (isNaN(altitude_masl)) errors.push("Altitude (MASL) must be a number.");
+  if (isNaN(plant_height_m)) errors.push("Plant Height (M) must be a number.");
+  if (raw_dbh !== "" && dbh_cm !== null && isNaN(dbh_cm))
+    errors.push("DBH (CM) must be a number.");
+
+  if (errors.length > 0) return { ok: false, errors };
+
+  return {
+    ok: true,
+    input: {
+      species: {
+        family,
+        scientific_name,
+        common_name,
+        conservation_status: conservation_status_result.data!,
+        nativity: nativity_result.data!,
+      },
+      location: {
+        country: "Philippines",
+        locality,
+        province,
+        region,
+        latitude,
+        longitude,
+      },
+      collectors: collector_names.map((name) => ({ name })),
+      specimen: {
+        accesssion_no,
+        date_collected: date_collected!,
+        habit,
+        habitat,
+        altitude_masl,
+        plant_height_m,
+        dbh_cm: raw_dbh !== "" ? dbh_cm : null,
+        flower_description: get("Flower Description") || undefined,
+        fruit_description: get("Fruit Description") || undefined,
+        leaf_description: get("Leaf Description") || undefined,
+        notes: get("Notes"),
+      },
+    },
+  };
+}
+
+type RowError = { rowIndex: number; accession: string; errors: string[] };
+
 // ── Specimen detail sheet ─────────────────────────────────────────────────────
 
 type SpecimenSheetProps = {
@@ -232,6 +391,7 @@ function SpecimenSheet({ open, onOpenChange, parsed, activeIndex, onNavigate }: 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 function BatchUploadPage() {
+  const { currentUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -241,6 +401,10 @@ function BatchUploadPage() {
   const [page, setPage] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [activeRowIndex, setActiveRowIndex] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveProgress, setSaveProgress] = useState<{ done: number; total: number } | null>(null);
+  const [rowErrors, setRowErrors] = useState<RowError[]>([]);
+  const [savedCount, setSavedCount] = useState<number | null>(null);
 
   async function handleFile(file: File) {
     if (!file.name.endsWith(".csv")) {
@@ -288,6 +452,66 @@ function BatchUploadPage() {
     setError(null);
     setPage(0);
     setSheetOpen(false);
+    setRowErrors([]);
+    setSavedCount(null);
+    setSaveProgress(null);
+  }
+
+  async function handleSave() {
+    if (!parsed) return;
+
+    // Validate all rows first
+    const validationErrors: RowError[] = [];
+    for (let i = 0; i < parsed.rows.length; i++) {
+      const result = csvRowToInput(parsed.headers, parsed.rows[i]);
+      if (!result.ok) {
+        const accession =
+          (() => {
+            const idx = parsed.headers.indexOf("Accession Number");
+            return idx >= 0 ? (parsed.rows[i][idx] ?? "") : "";
+          })() || `Row ${i + 1}`;
+        validationErrors.push({ rowIndex: i, accession, errors: result.errors });
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      setRowErrors(validationErrors);
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveProgress({ done: 0, total: parsed.rows.length });
+    setRowErrors([]);
+    setSavedCount(null);
+
+    const saveErrors: RowError[] = [];
+    let saved = 0;
+
+    for (let i = 0; i < parsed.rows.length; i++) {
+      const result = csvRowToInput(parsed.headers, parsed.rows[i]);
+      if (!result.ok) continue; // already caught above
+
+      try {
+        await saveSpecimenEntry(result.input, {
+          mode: "create",
+          performedBy: currentUser?.email ?? "unknown",
+        });
+        saved++;
+      } catch (err) {
+        const accession = result.input.specimen.accesssion_no || `Row ${i + 1}`;
+        saveErrors.push({
+          rowIndex: i,
+          accession,
+          errors: [err instanceof Error ? err.message : "Unknown error."],
+        });
+      }
+
+      setSaveProgress({ done: i + 1, total: parsed.rows.length });
+    }
+
+    setIsSaving(false);
+    setSavedCount(saved);
+    if (saveErrors.length > 0) setRowErrors(saveErrors);
   }
 
   function openSheet(globalIndex: number) {
@@ -515,14 +739,51 @@ function BatchUploadPage() {
                 )}
               </div>
 
+              {/* Row validation / save errors */}
+              {rowErrors.length > 0 && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 space-y-2">
+                  <p className="text-sm font-semibold text-red-700">
+                    {savedCount !== null
+                      ? `${savedCount} specimen${savedCount !== 1 ? "s" : ""} saved, but ${rowErrors.length} row${rowErrors.length !== 1 ? "s" : ""} failed:`
+                      : `${rowErrors.length} row${rowErrors.length !== 1 ? "s" : ""} have validation errors — fix them before saving:`}
+                  </p>
+                  <ul className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {rowErrors.map(({ rowIndex, accession, errors }) => (
+                      <li key={rowIndex} className="text-xs text-red-600">
+                        <span className="font-medium">
+                          Row {rowIndex + 1}{accession ? ` (${accession})` : ""}:
+                        </span>{" "}
+                        {errors.join(" ")}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Save success banner */}
+              {savedCount !== null && rowErrors.length === 0 && (
+                <div className="rounded-lg border border-lime-200 bg-lime-50 px-4 py-3">
+                  <p className="text-sm font-semibold text-lime-800">
+                    {savedCount} specimen{savedCount !== 1 ? "s" : ""} saved successfully.
+                  </p>
+                </div>
+              )}
+
               {/* Actions */}
               <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-                <Button variant="outline" onClick={handleReset}>
+                <Button variant="outline" onClick={handleReset} disabled={isSaving}>
                   Upload Different File
                 </Button>
-                <Button className="bg-lime-800 hover:bg-lime-700 text-white" disabled>
-                  Save to Database ({parsed.totalRows} specimen
-                  {parsed.totalRows !== 1 ? "s" : ""})
+                <Button
+                  className="bg-lime-800 hover:bg-lime-700 text-white"
+                  onClick={handleSave}
+                  disabled={isSaving || savedCount !== null}
+                >
+                  {isSaving && saveProgress
+                    ? `Saving… ${saveProgress.done} / ${saveProgress.total}`
+                    : savedCount !== null
+                      ? `Saved ${savedCount} specimen${savedCount !== 1 ? "s" : ""}`
+                      : `Save to Database (${parsed.totalRows} specimen${parsed.totalRows !== 1 ? "s" : ""})`}
                 </Button>
               </div>
             </div>
