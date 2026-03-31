@@ -12,8 +12,8 @@ import TaxonClassification from "@/components/pages/collection/TaxonClassificati
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TypographyH2 } from "@/components/ui/typography/typographyH2";
 import type { Specimen, Species, Collector, Location } from "@/data/types";
-import { ImageOff } from "lucide-react";
-import { useMemo } from "react";
+import { ImageOff, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 
 function CollectionDetails() {
@@ -69,6 +69,49 @@ function CollectionDetails() {
   const collectors = data?.collectors ?? [];
   const specimenLocation = data?.specimenLocation ?? null;
 
+  const [scale, setScale] = useState(1);
+  const [translate, setTranslate] = useState({ x: 0, y: 0 });
+  const isPanning = useRef(false);
+  const panStart = useRef({ x: 0, y: 0 });
+  const translateStart = useRef({ x: 0, y: 0 });
+
+  const MIN_ZOOM = 0.5;
+  const MAX_ZOOM = 5;
+  const ZOOM_STEP = 0.25;
+
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    setScale((prev) => {
+      const next = prev + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP);
+      return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, next));
+    });
+  }, []);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if (scale <= 1) return;
+    isPanning.current = true;
+    panStart.current = { x: e.clientX, y: e.clientY };
+    translateStart.current = { ...translate };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }, [scale, translate]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isPanning.current) return;
+    setTranslate({
+      x: translateStart.current.x + (e.clientX - panStart.current.x),
+      y: translateStart.current.y + (e.clientY - panStart.current.y),
+    });
+  }, []);
+
+  const handlePointerUp = useCallback(() => {
+    isPanning.current = false;
+  }, []);
+
+  function resetView() {
+    setScale(1);
+    setTranslate({ x: 0, y: 0 });
+  }
+
   const formattedDateCollected = specimen?.date_collected
     ? new Intl.DateTimeFormat("en-GB", {
         day: "numeric",
@@ -80,26 +123,78 @@ function CollectionDetails() {
     : "Loading...";
 
   return (
-    <>
-      <div className="bg-zinc-900 p-4 w-full text-zinc-50 italic">
+    <div className="flex flex-col h-[calc(100dvh-56px)] overflow-hidden">
+      <div className="bg-zinc-900 p-4 w-full text-zinc-50 italic shrink-0">
         <TypographyH2>{taxonFromRoute ?? "Specimen"}</TypographyH2>
       </div>
 
-      <div className="p-4 h-full">
-        <div className="flex w-full min-h-[70vh] h-full gap-4 items-stretch">
-          {/* Left side (image placeholder) */}
-          <div className="flex-1 h-full">
-            <div className="relative flex w-full h-full min-h-[70vh] items-center justify-center overflow-hidden rounded-md border border-zinc-950">
-              <ImageOff
-                className="h-14 w-14 text-gray-500"
-                aria-hidden="true"
-              />
+      <div className="p-4 flex-1 min-h-0">
+        <div className="flex w-full h-full gap-4 items-stretch">
+          {/* Left side (image) */}
+          <div className="basis-[70%] shrink-0 min-w-0 relative">
+            <div
+              className="relative flex w-full h-full items-center justify-center overflow-hidden rounded-md border border-zinc-950 bg-zinc-950"
+              onWheel={handleWheel}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onDoubleClick={resetView}
+              style={{ cursor: scale > 1 ? "grab" : "default", touchAction: "none" }}
+            >
+              {specimen?.photo_url ? (
+                <img
+                  src={specimen.photo_url}
+                  alt={species?.scientific_name ?? "Specimen"}
+                  className="max-h-full max-w-full object-contain select-none"
+                  draggable={false}
+                  style={{
+                    transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
+                    transition: isPanning.current ? "none" : "transform 0.15s ease-out",
+                  }}
+                />
+              ) : (
+                <ImageOff
+                  className="h-14 w-14 text-gray-500"
+                  aria-hidden="true"
+                />
+              )}
             </div>
+
+            {/* Zoom controls */}
+            {specimen?.photo_url && (
+              <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-900/90 p-1 backdrop-blur-sm">
+                <button
+                  className="flex h-7 w-7 items-center justify-center rounded text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors"
+                  onClick={() => setScale((s) => Math.max(MIN_ZOOM, s - ZOOM_STEP))}
+                  title="Zoom out"
+                >
+                  <ZoomOut className="size-4" />
+                </button>
+                <span className="min-w-[3rem] text-center text-xs font-medium text-zinc-300">
+                  {Math.round(scale * 100)}%
+                </span>
+                <button
+                  className="flex h-7 w-7 items-center justify-center rounded text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors"
+                  onClick={() => setScale((s) => Math.min(MAX_ZOOM, s + ZOOM_STEP))}
+                  title="Zoom in"
+                >
+                  <ZoomIn className="size-4" />
+                </button>
+                <div className="mx-0.5 h-4 w-px bg-zinc-700" />
+                <button
+                  className="flex h-7 w-7 items-center justify-center rounded text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors"
+                  onClick={resetView}
+                  title="Reset view"
+                >
+                  <RotateCcw className="size-3.5" />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Right side */}
-          <div className="flex-1 h-full">
-            <div className="w-full h-full min-h-[70vh] flex justify-center rounded-md">
+          <div className="flex-1 min-w-0 overflow-y-auto">
+            <div className="w-full h-full flex justify-center rounded-md">
               <Tabs defaultValue="summary" className="w-100">
                 <TabsList>
                   <TabsTrigger value="summary">Summary</TabsTrigger>
@@ -131,7 +226,7 @@ function CollectionDetails() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
