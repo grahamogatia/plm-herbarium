@@ -1,5 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import { CalendarDays, Hash, ImageOff, Leaf, MapPin, Pencil, Trash2, UserRound } from "lucide-react";
+import { CalendarDays, Hash, ImageOff, Leaf, MapPin, Pencil, Trash2, Upload, UserRound } from "lucide-react";
 import { useState } from "react";
 import { softDeleteSpecimenByAccession, type CollectionRow } from "@/api/collection";
 import { useAuth } from "@/context/AuthContext";
@@ -16,6 +16,41 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
+type ImageCellProps = {
+  row: CollectionRow;
+};
+
+function ImageCell({ row }: ImageCellProps) {
+  const { currentUser } = useAuth();
+
+  if (row.photoUrl) {
+    return (
+      <div className="h-9 w-9 overflow-hidden rounded-md border border-zinc-200">
+        <img src={row.photoUrl} alt={row.taxon} className="h-full w-full object-cover" />
+      </div>
+    );
+  }
+
+  if (currentUser) {
+    return (
+      <Link
+        to={`/collections/upload-image/${encodeURIComponent(row.accessionNo)}`}
+        title="Upload image"
+        className="flex h-9 w-9 items-center justify-center rounded-md border border-dashed border-lime-300 bg-lime-50 transition-colors hover:border-lime-400 hover:bg-lime-100"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Upload className="h-4 w-4 text-lime-700" />
+      </Link>
+    );
+  }
+
+  return (
+    <div className="flex h-9 w-9 items-center justify-center rounded-md border border-zinc-200 bg-zinc-50">
+      <ImageOff className="h-4 w-4 text-zinc-500" aria-label="No image available" />
+    </div>
+  );
+}
 
 type DeleteSpecimenButtonProps = {
   row: CollectionRow;
@@ -96,10 +131,8 @@ export function specimenColumns(
   {
     id: "image",
     header: "Image",
-    cell: () => (
-      <div className="flex h-9 w-9 items-center justify-center rounded-md border border-zinc-200 bg-zinc-50">
-        <ImageOff className="h-4 w-4 text-zinc-500" aria-label="No image available" />
-      </div>
+    cell: ({ row }) => (
+      <ImageCell row={row.original} />
     ),
   },
   {

@@ -9,6 +9,7 @@ import CollectionDetails from "./components/pages/collection/Specimen.tsx";
 import AddSpecimenPage from "./pages/AddSpecimenPage.tsx";
 import UpdateSpecimenPage from "./pages/UpdateSpecimenPage.tsx";
 import BatchUploadPage from "./pages/BatchUploadPage.tsx";
+import UploadImagePage from "./pages/UploadImagePage.tsx";
 import LoginPage from "./pages/LoginPage.tsx";
 import AdminPage from "./pages/AdminPage.tsx";
 
@@ -37,6 +38,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/collections/add-specimen" element={<AddSpecimenPage />} />
           <Route path="/collections/update/:accessionNo" element={<UpdateSpecimenPage />} />
+          <Route path="/collections/upload-image/:accessionNo" element={<UploadImagePage />} />
           <Route path="/collections/batch-upload" element={<BatchUploadPage />} />
         </Route>
         {/* Admin-only routes */}

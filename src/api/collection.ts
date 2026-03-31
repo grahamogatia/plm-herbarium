@@ -8,7 +8,8 @@ import {
   where,
   writeBatch,
 } from "firebase/firestore";
-import { db } from "@/api/database";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "@/api/database";
 import { writeLog } from "@/api/logs";
 import { SpecimenSchema } from "@/data/schemas";
 import type { Specimen, Species, Collector, Location } from "@/data/types";
@@ -719,4 +720,44 @@ export async function getLocationByLocationId(
   }
 
   return locationDoc.data() as Location;
+}
+
+export async function uploadSpecimenImage(
+  accessionNo: string,
+  file: File,
+): Promise<string> {
+  const normalizedAccessionNo = accessionNo.trim();
+  if (!normalizedAccessionNo) {
+    throw new Error("Accession number is required.");
+  }
+
+  const extension = file.name.split(".").pop() ?? "jpg";
+  const storagePath = `specimens/${normalizedAccessionNo}.${extension}`;
+  const storageRef = ref(storage, storagePath);
+
+  await uploadBytes(storageRef, file, {
+    contentType: file.type,
+  });
+
+  const downloadURL = await getDownloadURL(storageRef);
+
+  const specimenSnapshot = await getDocs(
+    query(
+      collection(db, "specimens"),
+      where("accesssion_no", "==", normalizedAccessionNo),
+      limit(1),
+    ),
+  );
+
+  const specimenDoc = specimenSnapshot.docs.at(0);
+  if (!specimenDoc) {
+    throw new Error("Specimen not found.");
+  }
+
+  await updateDoc(specimenDoc.ref, { photo_url: downloadURL });
+
+  collectionRowsCache = null;
+  collectionRowsCacheTimestamp = 0;
+
+  return downloadURL;
 }

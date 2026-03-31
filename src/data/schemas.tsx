@@ -21,6 +21,8 @@ export const SpecimenSchema = z.object({
   leaf_description: z.string().optional(),
 
   notes: z.string(),
+
+  photo_url: z.string().optional(),
 });
 
 export const SpeciesSchema = z.object({
