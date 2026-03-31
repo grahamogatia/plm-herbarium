@@ -1,6 +1,7 @@
 import type { CollectionRow } from "@/api/collection";
 import { DataTable } from "@/components/ui/datatable";
 import { specimenColumns } from "@/data/columns";
+import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useMemo } from "react";
 
@@ -22,9 +23,10 @@ function TableView({
   onDeleteRow,
 }: TableViewProps) {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const columns = useMemo(
-    () => specimenColumns({ onDeleted: onDeleteRow }),
-    [onDeleteRow],
+    () => specimenColumns({ onDeleted: onDeleteRow, isAuthenticated: !!currentUser }),
+    [onDeleteRow, currentUser],
   );
 
   if (isLoading) {

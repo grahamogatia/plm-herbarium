@@ -100,12 +100,13 @@ function DeleteSpecimenButton({ row, onDeleted }: DeleteSpecimenButtonProps) {
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button
-          variant="destructive"
+          variant="outline"
           size="icon-xs"
+          className="h-7 w-7 rounded-md border-zinc-300 bg-white text-zinc-600 shadow-sm hover:border-red-400 hover:bg-red-50 hover:text-red-600"
           aria-label={`Delete specimen ${row.accessionNo}`}
           title="Delete"
         >
-          <Trash2 aria-hidden="true" />
+          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
@@ -140,12 +141,13 @@ function DeleteSpecimenButton({ row, onDeleted }: DeleteSpecimenButtonProps) {
 
 type SpecimenColumnsOptions = {
   onDeleted?: (row: CollectionRow) => void;
+  isAuthenticated?: boolean;
 };
 
 export function specimenColumns(
   options: SpecimenColumnsOptions = {},
 ): ColumnDef<CollectionRow>[] {
-  const { onDeleted } = options;
+  const { onDeleted, isAuthenticated = false } = options;
 
   return [
   {
@@ -227,24 +229,27 @@ export function specimenColumns(
       <div className="relative flex w-full min-w-55 items-center pr-20 text-zinc-700">
         <span className="truncate">{String(getValue() ?? "-")}</span>
 
-        <div
-          data-row-actions
-          className="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-center gap-1 bg-linear-to-l from-white via-white to-transparent pl-6 opacity-0 transition-opacity duration-150 group-hover/row:pointer-events-auto group-hover/row:opacity-100 group-focus-within/row:pointer-events-auto group-focus-within/row:opacity-100"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <Button
-            asChild
-            variant="outline"
-            size="icon-xs"
-            aria-label={`Update specimen ${row.original.accessionNo}`}
-            title="Update"
+        {isAuthenticated && (
+          <div
+            data-row-actions
+            className="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-center gap-1.5 bg-linear-to-l from-white via-white to-transparent pl-6 opacity-0 transition-opacity duration-150 group-hover/row:pointer-events-auto group-hover/row:opacity-100 group-focus-within/row:pointer-events-auto group-focus-within/row:opacity-100"
+            onClick={(event) => event.stopPropagation()}
           >
-            <Link to={`/collections/update/${encodeURIComponent(row.original.accessionNo)}`}>
-              <Pencil aria-hidden="true" />
-            </Link>
-          </Button>
-          <DeleteSpecimenButton row={row.original} onDeleted={onDeleted} />
-        </div>
+            <Button
+              asChild
+              variant="outline"
+              size="icon-xs"
+              className="h-7 w-7 rounded-md border-zinc-300 bg-white text-zinc-600 shadow-sm hover:border-lime-400 hover:bg-lime-50 hover:text-lime-700"
+              aria-label={`Update specimen ${row.original.accessionNo}`}
+              title="Update"
+            >
+              <Link to={`/collections/update/${encodeURIComponent(row.original.accessionNo)}`}>
+                <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
+            </Button>
+            <DeleteSpecimenButton row={row.original} onDeleted={onDeleted} />
+          </div>
+        )}
       </div>
     ),
   },
