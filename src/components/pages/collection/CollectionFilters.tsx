@@ -42,7 +42,7 @@ function CollectionFilters({
           value={searchQuery}
           onChange={(event) => onSearchQueryChange(event.target.value)}
           placeholder="Search collection..."
-          className="h-10 w-full border-lime-200/60 bg-white pr-3 pl-9 text-sm text-zinc-900 placeholder:text-zinc-500 focus-visible:ring-lime-200"
+          className="h-10 w-full border-zinc-200/60 bg-white pr-3 pl-9 text-sm text-zinc-900 placeholder:text-zinc-500 focus-visible:ring-lime-300"
           aria-label="Search collection"
         />
       </div>
@@ -55,7 +55,7 @@ function CollectionFilters({
       >
         <ComboboxChips
           ref={familyAnchor}
-          className="w-full overflow-x-auto rounded-md border-lime-200/60 bg-white text-zinc-900 flex-nowrap!"
+          className="w-full overflow-x-auto rounded-md border-zinc-200/60 bg-white text-zinc-900 flex-nowrap!"
           aria-label="Filter by family"
         >
           <ComboboxValue>

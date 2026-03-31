@@ -15,7 +15,7 @@ function StatisticsSection() {
             <p>Digital Collection</p>
           </TypographyH2>
           <TypographyH1>
-            <p className="text-fuchsia-800">569 Specimen</p>
+            <p className="text-lime-700">569 Specimen</p>
           </TypographyH1>
         </div>
         <div className="pt-10 flex gap-4">

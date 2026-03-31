@@ -88,7 +88,7 @@ function GalleryView({
                 </div>
                 <div className="h-[30%] p-3 space-y-1 overflow-hidden">
                   <p className="text-sm font-semibold italic truncate">{row.taxon}</p>
-                  <p className="text-xs text-zinc-700 truncate">{row.family}</p>
+                  <p className="text-xs font-medium text-lime-700 truncate">{row.family}</p>
                   <p className="text-xs text-zinc-600 truncate">{row.collector}</p>
                   <p className="text-xs font-mono text-zinc-500 truncate">{row.accessionNo}</p>
                 </div>

@@ -568,7 +568,7 @@ export function MultiForm({
   return (
     <Card className="border-border/70 ">
       <CardHeader className="space-y-4">
-        <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/70 p-4">
+        <div className="rounded-xl border border-zinc-200/60 bg-zinc-50/70 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <CardTitle className="text-lg">Add New Specimen</CardTitle>
@@ -576,14 +576,14 @@ export function MultiForm({
                 Capture accurate taxonomy, locality, and field details.
               </CardDescription>
             </div>
-            <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-700">
+            <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-zinc-700">
               {progress}% complete
             </div>
           </div>
 
-          <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-emerald-100">
+          <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-zinc-100">
             <div
-              className="h-full bg-emerald-600 transition-all duration-300"
+              className="h-full bg-lime-600 transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -600,9 +600,9 @@ export function MultiForm({
                 key={step.title}
                 className={`rounded-lg border p-3 transition-colors ${
                   isActive
-                    ? "border-emerald-300 bg-emerald-50"
+                    ? "border-zinc-200 bg-zinc-50"
                     : isCompleted
-                      ? "border-emerald-200 bg-emerald-50/40"
+                      ? "border-zinc-200 bg-zinc-50/40"
                       : "border-border/70 bg-card"
                 } min-w-0 flex-1`}
               >
@@ -610,9 +610,9 @@ export function MultiForm({
                   <div
                     className={`flex size-7 items-center justify-center rounded-full ${
                       isCompleted
-                        ? "bg-emerald-600 text-white"
+                        ? "bg-lime-700 text-white"
                         : isActive
-                          ? "bg-emerald-200 text-emerald-900"
+                          ? "bg-zinc-200 text-zinc-900"
                           : "bg-muted text-muted-foreground"
                     }`}
                   >
@@ -708,14 +708,14 @@ export function MultiForm({
       </CardFooter>
 
       {submitMessage ? (
-        <p className="px-6 pb-5 text-sm font-medium text-emerald-700">
+        <p className="px-6 pb-5 text-sm font-medium text-zinc-700">
           {submitMessage}
         </p>
       ) : null}
 
       {successSummary ? (
-        <div className="fixed bottom-4 right-4 z-50 w-[min(92vw,420px)] rounded-lg border border-emerald-300 bg-white p-4 shadow-xl">
-          <div className="mb-2 flex items-center gap-2 text-emerald-700">
+        <div className="fixed bottom-4 right-4 z-50 w-[min(92vw,420px)] rounded-lg border border-lime-200 bg-white p-4 shadow-xl">
+          <div className="mb-2 flex items-center gap-2 text-lime-700">
             <Check className="size-4" />
             <p className="text-sm font-semibold">
               {mode === "update"

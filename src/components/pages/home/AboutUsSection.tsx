@@ -13,12 +13,12 @@ function AboutUsSection() {
   const [feedback, setFeedback] = useState("");
 
   return (
-    <FullScreen title="Pamantasan ng Lungsod ng Maynila" className="bg-lime-800">
+    <FullScreen title="Pamantasan ng Lungsod ng Maynila" className="bg-zinc-900">
       <div className="flex flex-col gap-5 h-full pl-20 pr-20 pt-8 pb-8 flex-1">
         <TypographyH1>
           <p className="text-zinc-50 italic">Pamantasan ng Lungsod ng Maynila</p>
         </TypographyH1>
-        <Card className="h-90 overflow-hidden p-0 bg-lime-800">
+        <Card className="h-90 overflow-hidden p-0 bg-zinc-900">
           <img
             src={plmBldg}
             alt="PLM Building"
@@ -66,7 +66,7 @@ function AboutUsSection() {
             onChange={(e) => setFeedback(e.target.value)}
           />
           <Button
-            className="bg-zinc-50 text-lime-800 w-fit disabled:opacity-50"
+            className="bg-lime-600 text-white hover:bg-lime-700 w-fit disabled:opacity-50"
             disabled={!feedback}
           >
             Submit Feedback

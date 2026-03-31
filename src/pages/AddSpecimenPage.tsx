@@ -8,7 +8,7 @@ import { TypographyH2 } from "@/components/ui/typography/typographyH2";
 function AddSpecimenPage() {
   return (
     <>
-      <div className="bg-lime-800 p-4 w-full">
+      <div className="bg-zinc-900 p-4 w-full">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
           <div className="shrink-0 text-zinc-50">
             <TypographyH2>Add Specimen</TypographyH2>

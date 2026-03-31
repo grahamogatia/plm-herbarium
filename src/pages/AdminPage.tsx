@@ -143,12 +143,12 @@ function AdminPage() {
   return (
     <>
       {/* Page header */}
-      <div className="bg-lime-800 p-4 w-full text-zinc-50">
+      <div className="bg-zinc-900 p-4 w-full text-zinc-50">
         <div className="flex items-center gap-2">
           <Shield className="h-5 w-5" />
           <h1 className="text-2xl font-semibold">Admin Panel</h1>
         </div>
-        <p className="text-sm text-lime-200 mt-0.5">Manage user accounts and view activity logs.</p>
+        <p className="text-sm text-zinc-400 mt-0.5">Manage user accounts and view activity logs.</p>
       </div>
 
       {/* Tabs */}
@@ -157,7 +157,7 @@ function AdminPage() {
           <button
             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === "users"
-                ? "border-lime-700 text-lime-800"
+                ? "border-lime-600 text-zinc-900"
                 : "border-transparent text-zinc-500 hover:text-zinc-800"
             }`}
             onClick={() => setActiveTab("users")}
@@ -168,7 +168,7 @@ function AdminPage() {
           <button
             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === "logs"
-                ? "border-lime-700 text-lime-800"
+                ? "border-lime-600 text-zinc-900"
                 : "border-transparent text-zinc-500 hover:text-zinc-800"
             }`}
             onClick={() => setActiveTab("logs")}
@@ -186,7 +186,7 @@ function AdminPage() {
             <h2 className="text-lg font-semibold text-zinc-800">User Accounts</h2>
             <Button
               size="sm"
-              className="bg-lime-800 hover:bg-lime-700 text-zinc-50 gap-2"
+              className="bg-zinc-900 hover:bg-zinc-800 text-zinc-50 gap-2"
               onClick={() => { setShowDialog(true); setAddError(""); }}
             >
               <UserPlus className="size-4" />
@@ -254,7 +254,7 @@ function AdminPage() {
                                   <Button
                                     size="xs"
                                     variant="outline"
-                                    className="text-lime-800 border-lime-300 hover:bg-lime-50"
+                                    className="text-lime-800 border-lime-200 hover:bg-lime-50"
                                     onClick={() => handleRoleChange(user.uid, "admin")}
                                   >
                                     Make Admin
@@ -528,7 +528,7 @@ function AdminPage() {
                             onClick={() => setLogPage(n)}
                             className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
                               n === safePage
-                                ? "bg-lime-800 text-white"
+                                ? "bg-zinc-900 text-white"
                                 : "text-zinc-600 hover:bg-zinc-100"
                             }`}
                           >
@@ -610,7 +610,7 @@ function AdminPage() {
                 <Button
                   type="submit"
                   size="sm"
-                  className="bg-lime-800 hover:bg-lime-700 text-zinc-50"
+                  className="bg-zinc-900 hover:bg-zinc-800 text-zinc-50"
                   disabled={addLoading}
                 >
                   {addLoading ? "Creating..." : "Create User"}
@@ -625,7 +625,7 @@ function AdminPage() {
 }
 
 const ACTION_STYLES: Record<LogAction, { label: string; className: string }> = {
-  login:            { label: "Login",           className: "bg-emerald-100 text-emerald-800" },
+  login:            { label: "Login",           className: "bg-lime-100 text-lime-800" },
   logout:           { label: "Logout",          className: "bg-zinc-100 text-zinc-600" },
   specimen_create:  { label: "Specimen Add",    className: "bg-sky-100 text-sky-800" },
   specimen_update:  { label: "Specimen Update", className: "bg-amber-100 text-amber-800" },

@@ -90,7 +90,7 @@ export function DataTable<TData, TValue>({
                   return (
                     <TableHead
                       key={header.id}
-                      className="bg-lime-800 font-semibold text-lime-50 first:rounded-tl-lg last:rounded-tr-lg"
+                      className="bg-zinc-900 font-semibold text-zinc-50 first:rounded-tl-lg last:rounded-tr-lg"
                     >
                       {header.isPlaceholder
                         ? null
@@ -112,7 +112,7 @@ export function DataTable<TData, TValue>({
                   data-state={row.getIsSelected() && "selected"}
                   className={[
                     onRowClick ? "group/row cursor-pointer" : "group/row",
-                    "transition-colors hover:bg-lime-50 border-none",
+                    "transition-colors hover:bg-lime-50/40 border-none",
                     rowIndex % 2 === 0 ? "bg-white" : "bg-zinc-50/60",
                   ].join(" ")}
                   onClick={onRowClick ? () => onRowClick(row.original) : undefined}

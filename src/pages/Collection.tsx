@@ -161,7 +161,7 @@ function Collection() {
 
   return (
     <>
-      <div className="bg-lime-800 p-4 w-full">
+      <div className="bg-zinc-900 p-4 w-full">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
           <CollectionHeader />
           <div className="w-full sm:flex-1">
@@ -207,8 +207,8 @@ function Collection() {
       )}
 
       {deleteToastAccessionNo ? (
-        <div className="fixed bottom-4 right-4 z-50 w-[min(92vw,420px)] rounded-lg border border-emerald-300 bg-white p-4 shadow-xl">
-          <div className="mb-2 flex items-center gap-2 text-emerald-700">
+        <div className="fixed bottom-4 right-4 z-50 w-[min(92vw,420px)] rounded-lg border border-lime-200 bg-white p-4 shadow-xl">
+          <div className="mb-2 flex items-center gap-2 text-lime-700">
             <Check className="size-4" />
             <p className="text-sm font-semibold">
               Specimen deleted successfully

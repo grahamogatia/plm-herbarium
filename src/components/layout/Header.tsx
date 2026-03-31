@@ -28,7 +28,7 @@ function Header() {
     <header className="sticky top-0 z-50 w-full h-14 px-6 flex items-center justify-between bg-white">
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/home")}>
-          <Leaf className="h-5 w-5" />
+          <Leaf className="h-5 w-5 text-lime-700" />
           <div className="text-lg font-semibold">PLM Botanical Herbarium</div>
         </div>
         <div className="text-lg leading-none text-zinc-400">|</div>
@@ -57,7 +57,7 @@ function Header() {
           </Button>
         </div>
       ) : (
-        <Button className="bg-lime-800 text-zinc-50" onClick={() => navigate("/login")}>
+        <Button className="bg-lime-700 hover:bg-lime-800 text-white" onClick={() => navigate("/login")}>
           Login
         </Button>
       )}

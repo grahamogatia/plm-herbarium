@@ -526,7 +526,7 @@ function BatchUploadPage() {
 
   return (
     <>
-      <div className="bg-lime-800 p-4 w-full">
+      <div className="bg-zinc-900 p-4 w-full">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
           <div className="shrink-0 text-zinc-50">
             <TypographyH2>Batch Upload</TypographyH2>
@@ -564,7 +564,7 @@ function BatchUploadPage() {
             <div
               className={`flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed px-6 py-16 text-center transition-colors cursor-pointer ${
                 isDragging
-                  ? "border-lime-600 bg-lime-50"
+                  ? "border-zinc-700 bg-zinc-50"
                   : "border-zinc-300 bg-zinc-50 hover:border-zinc-400"
               }`}
               onClick={() => fileInputRef.current?.click()}
@@ -572,8 +572,8 @@ function BatchUploadPage() {
               onDragOver={handleDragOver}
               onDragLeave={() => setIsDragging(false)}
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-lime-100">
-                <CloudUpload className="size-7 text-lime-800" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-lime-50">
+                <CloudUpload className="size-7 text-lime-700" />
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-zinc-700">
@@ -604,7 +604,7 @@ function BatchUploadPage() {
               {/* File info bar */}
               <div className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white px-4 py-3">
                 <div className="flex items-center gap-3">
-                  <FileSpreadsheet className="size-5 text-lime-700 shrink-0" />
+                  <FileSpreadsheet className="size-5 text-zinc-700 shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-zinc-700">{fileName}</p>
                     <p className="text-xs text-zinc-400">
@@ -634,9 +634,9 @@ function BatchUploadPage() {
                 <div className="overflow-x-auto rounded-lg border border-zinc-200 shadow-sm">
                   <table className="min-w-full text-xs">
                     <thead>
-                      <tr className="bg-lime-800 text-lime-50">
+                      <tr className="bg-zinc-900 text-zinc-50">
                         {/* # — frozen col 0 */}
-                        <th className="sticky left-0 z-20 bg-lime-800 w-10 whitespace-nowrap px-3 py-2.5 text-left font-semibold">
+                        <th className="sticky left-0 z-20 bg-zinc-900 w-10 whitespace-nowrap px-3 py-2.5 text-left font-semibold">
                           #
                         </th>
                         {parsed.headers.map((header) => {
@@ -648,9 +648,9 @@ function BatchUploadPage() {
                               className={[
                                 "whitespace-nowrap px-3 py-2.5 text-left font-semibold",
                                 isAccession
-                                  ? "sticky left-10 z-20 bg-lime-800 w-28 min-w-28 max-w-28"
+                                  ? "sticky left-10 z-20 bg-zinc-900 w-28 min-w-28 max-w-28"
                                   : isScientific
-                                    ? "sticky left-38 z-20 bg-lime-800 w-36 min-w-36 max-w-36 italic shadow-[2px_0_5px_-2px_rgba(0,0,0,0.35)]"
+                                    ? "sticky left-38 z-20 bg-zinc-900 w-36 min-w-36 max-w-36 italic shadow-[2px_0_5px_-2px_rgba(0,0,0,0.35)]"
                                     : "",
                               ]
                                 .filter(Boolean)
@@ -670,12 +670,12 @@ function BatchUploadPage() {
                         return (
                           <tr
                             key={globalIndex}
-                            className={`group cursor-pointer transition-colors hover:bg-lime-50 ${rowBg}`}
+                            className={`group cursor-pointer transition-colors hover:bg-zinc-50 ${rowBg}`}
                             onClick={() => openSheet(globalIndex)}
                           >
                             {/* # — frozen col 0 */}
                             <td
-                              className={`sticky left-0 z-10 w-10 whitespace-nowrap px-3 py-2 font-medium select-none text-zinc-400 ${rowBg} group-hover:bg-lime-50`}
+                              className={`sticky left-0 z-10 w-10 whitespace-nowrap px-3 py-2 font-medium select-none text-zinc-400 ${rowBg} group-hover:bg-zinc-50`}
                             >
                               {globalIndex + 1}
                             </td>
@@ -689,9 +689,9 @@ function BatchUploadPage() {
                                     "truncate whitespace-nowrap px-3 py-2 text-zinc-700",
                                     ITALIC_COLUMNS.has(header) ? "italic" : "",
                                     isAccession
-                                      ? `sticky left-10 z-10 min-w-28 max-w-28 ${rowBg} group-hover:bg-lime-50`
+                                      ? `sticky left-10 z-10 min-w-28 max-w-28 ${rowBg} group-hover:bg-zinc-50`
                                       : isScientific
-                                        ? `sticky left-38 z-10 min-w-36 max-w-36 ${rowBg} group-hover:bg-lime-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.15)]`
+                                        ? `sticky left-38 z-10 min-w-36 max-w-36 ${rowBg} group-hover:bg-zinc-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.15)]`
                                         : "max-w-45",
                                   ]
                                     .filter(Boolean)
@@ -775,7 +775,7 @@ function BatchUploadPage() {
                   Upload Different File
                 </Button>
                 <Button
-                  className="bg-lime-800 hover:bg-lime-700 text-white"
+                  className="bg-zinc-900 hover:bg-zinc-800 text-white"
                   onClick={handleSave}
                   disabled={isSaving || savedCount !== null}
                 >

@@ -33,7 +33,7 @@ function LoginPage() {
       <div className="w-full max-w-sm rounded-xl border bg-white p-8 shadow-sm">
         <div className="mb-8 flex flex-col items-center gap-2 text-center">
           <div className="flex items-center gap-2">
-            <Leaf className="h-6 w-6 text-lime-800" />
+            <Leaf className="h-6 w-6 text-lime-700" />
             <span className="text-lg font-semibold">PLM Botanical Herbarium</span>
           </div>
           <p className="text-sm text-zinc-500">Sign in to your account</p>
@@ -78,7 +78,7 @@ function LoginPage() {
 
           <Button
             type="submit"
-            className="mt-2 w-full bg-lime-800 text-zinc-50 hover:bg-lime-700"
+            className="mt-2 w-full bg-lime-700 text-white hover:bg-lime-800"
             disabled={loading}
           >
             {loading ? "Signing in…" : "Sign in"}

@@ -9,7 +9,7 @@ function AddSpecimen() {
     if (!currentUser) return null;
 
     return(
-        <Button asChild variant="outline" size="sm">
+        <Button asChild variant="outline" size="sm" className="border-lime-200 text-lime-800 hover:bg-lime-50">
             <Link to="/collections/add-specimen">
                 <Plus className="size-4" />
                 Add Specimen

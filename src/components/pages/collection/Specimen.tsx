@@ -81,7 +81,7 @@ function CollectionDetails() {
 
   return (
     <>
-      <div className="bg-lime-800 p-4 w-full text-zinc-50 italic">
+      <div className="bg-zinc-900 p-4 w-full text-zinc-50 italic">
         <TypographyH2>{taxonFromRoute ?? "Specimen"}</TypographyH2>
       </div>
 

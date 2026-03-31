@@ -24,7 +24,7 @@ function HeroSection() {
             The PLM Botanical Herbarium is a university-based herbarium located at Pamantasan ng Lungsod ng Maynila, Intramuros, Philippines, dedicated to preserving plant and fungal specimens primarily gathered from undergraduate research projects and course requirements since 1983.
           </p>
         </TypographyH4>
-        <Button className="bg-zinc-100 w-fit text-zinc-950 rounded-4xl gap-1">
+        <Button className="bg-lime-600 w-fit text-white hover:bg-lime-700 rounded-4xl gap-1">
           View Collection <ArrowRight />
         </Button>
       </div>
