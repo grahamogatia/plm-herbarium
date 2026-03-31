@@ -106,7 +106,7 @@ export function specimenColumns(
     accessorKey: "accessionNo",
     header: () => (
       <span className="inline-flex items-center gap-1.5">
-        <Hash className="h-3.5 w-3.5 text-zinc-500" aria-hidden="true" />
+        <Hash className="h-3.5 w-3.5 text-lime-200" aria-hidden="true" />
         Accession No.
       </span>
     ),
@@ -120,7 +120,7 @@ export function specimenColumns(
     accessorKey: "taxon",
     header: () => (
       <span className="inline-flex items-center gap-1.5">
-        <Leaf className="h-3.5 w-3.5 text-zinc-500" aria-hidden="true" />
+        <Leaf className="h-3.5 w-3.5 text-lime-200" aria-hidden="true" />
         Taxon
       </span>
     ),
@@ -132,7 +132,7 @@ export function specimenColumns(
     accessorKey: "family",
     header: () => (
       <span className="inline-flex items-center gap-1.5">
-        <Leaf className="h-3.5 w-3.5 text-zinc-500" aria-hidden="true" />
+        <Leaf className="h-3.5 w-3.5 text-lime-200" aria-hidden="true" />
         Family
       </span>
     ),
@@ -146,7 +146,7 @@ export function specimenColumns(
     accessorKey: "collector",
     header: () => (
       <span className="inline-flex items-center gap-1.5">
-        <UserRound className="h-3.5 w-3.5 text-zinc-500" aria-hidden="true" />
+        <UserRound className="h-3.5 w-3.5 text-lime-200" aria-hidden="true" />
         Collector
       </span>
     ),
@@ -156,7 +156,7 @@ export function specimenColumns(
     accessorKey: "date",
     header: () => (
       <span className="inline-flex items-center gap-1.5">
-        <CalendarDays className="h-3.5 w-3.5 text-zinc-500" aria-hidden="true" />
+        <CalendarDays className="h-3.5 w-3.5 text-lime-200" aria-hidden="true" />
         Date
       </span>
     ),
@@ -166,7 +166,7 @@ export function specimenColumns(
     accessorKey: "locality",
     header: () => (
       <span className="inline-flex items-center gap-1.5">
-        <MapPin className="h-3.5 w-3.5 text-zinc-500" aria-hidden="true" />
+        <MapPin className="h-3.5 w-3.5 text-lime-200" aria-hidden="true" />
         Locality
       </span>
     ),

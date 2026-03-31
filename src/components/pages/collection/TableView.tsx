@@ -29,22 +29,22 @@ function TableView({
 
   if (isLoading) {
     return (
-      <div className="bg-white text-zinc-900 rounded-lg p-4">
-        <p className="text-sm text-zinc-600">Loading collection data...</p>
+      <div className="px-4 py-8 text-center">
+        <p className="text-sm text-zinc-500">Loading collection data...</p>
       </div>
     );
   }
 
   if (errorMessage) {
     return (
-      <div className="bg-white text-zinc-900 rounded-lg p-4">
+      <div className="px-4 py-8 text-center">
         <p className="text-sm text-red-600">{errorMessage}</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white text-zinc-900 rounded-lg p-4">
+    <div className="px-4 pb-4">
       <DataTable
         columns={columns}
         data={rows}
