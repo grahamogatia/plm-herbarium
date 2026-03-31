@@ -2,6 +2,7 @@ import type { FormValues } from "./types";
 
 type Props = {
   values: FormValues;
+  imagePreview?: string | null;
 };
 
 function ValueRow({
@@ -21,7 +22,7 @@ function ValueRow({
   );
 }
 
-function ReviewSection({ values }: Props) {
+function ReviewSection({ values, imagePreview }: Props) {
   return (
     <div className="space-y-4">
       <div>
@@ -78,6 +79,21 @@ function ReviewSection({ values }: Props) {
           <ValueRow label="Leaf Description" value={values.leaf_description} />
           <ValueRow label="Notes" value={values.notes} />
         </div>
+      </section>
+
+      <section className="space-y-3">
+        <h4 className="text-sm font-semibold">Image</h4>
+        {imagePreview ? (
+          <div className="overflow-hidden rounded-lg border border-border/60">
+            <img
+              src={imagePreview}
+              alt="Specimen preview"
+              className="mx-auto max-h-48 object-contain"
+            />
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No image uploaded.</p>
+        )}
       </section>
     </div>
   );

@@ -1,14 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { z } from "zod";
 import {
+  Camera,
   Check,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  CloudUpload,
   Eye,
   Leaf,
   MapPin,
+  Trash2,
   UserRound,
 } from "lucide-react";
 
@@ -30,6 +33,7 @@ import {
   getCollectorNames,
   getSpeciesFamilies,
   saveSpecimenEntry,
+  uploadSpecimenImage,
 } from "@/api/collection";
 import type { FormErrors, FormValues } from "@/components/pages/collection/multi-form/types";
 import {
@@ -120,6 +124,11 @@ const steps = [
     icon: ClipboardList,
   },
   {
+    title: "Image",
+    description: "Upload specimen photo",
+    icon: Camera,
+  },
+  {
     title: "Review",
     description: "Check everything before submit",
     icon: Eye,
@@ -182,6 +191,9 @@ export function MultiForm({
     useState<SuccessSubmissionSummary | null>(null);
   const [familyOptions, setFamilyOptions] = useState<string[]>([]);
   const [collectorOptions, setCollectorOptions] = useState<string[]>([]);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -236,6 +248,7 @@ export function MultiForm({
     setSubmitMessage("");
     setSuccessSummary(null);
     setCurrentStep(0);
+    handleClearImage();
   }, [resolvedInitialValues]);
 
   const isLastStep = currentStep === steps.length - 1;
@@ -417,6 +430,19 @@ export function MultiForm({
     setErrors((prev) => ({ ...prev, collector_names: undefined }));
   };
 
+  function handleImageFile(file: File) {
+    if (!file.type.startsWith("image/")) return;
+    setImageFile(file);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(URL.createObjectURL(file));
+  }
+
+  function handleClearImage() {
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImageFile(null);
+    setImagePreview(null);
+  }
+
   const handleSubmitClick = async () => {
     if (!isLastStep) {
       return;
@@ -541,6 +567,10 @@ export function MultiForm({
         },
       }, { mode, performedBy: currentUser?.email ?? "unknown" });
 
+      if (imageFile) {
+        await uploadSpecimenImage(specimenCheck.data.accesssion_no, imageFile);
+      }
+
       const collectorNames = collectorPayload.map((collector) => collector.name).join(", ");
 
       setSuccessSummary({
@@ -553,6 +583,7 @@ export function MultiForm({
         setValues(initialValues);
         setErrors({});
         setCurrentStep(0);
+        handleClearImage();
       }
     } catch (error) {
       const message =
@@ -668,7 +699,78 @@ export function MultiForm({
               />
             )}
 
-            {currentStep === 4 && <ReviewSection values={values} />}
+            {currentStep === 4 && (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-base font-semibold">Specimen Image</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Upload a photo of the herbarium specimen. This step is optional.
+                  </p>
+                </div>
+
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageFile(file);
+                    e.target.value = "";
+                  }}
+                />
+
+                {!imagePreview ? (
+                  <div
+                    className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50 px-6 py-12 text-center transition-colors hover:border-lime-400 cursor-pointer"
+                    onClick={() => imageInputRef.current?.click()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) handleImageFile(file);
+                    }}
+                    onDragOver={(e) => e.preventDefault()}
+                  >
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-lime-50">
+                      <CloudUpload className="size-6 text-lime-700" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-zinc-700">
+                        Drag & drop an image here
+                      </p>
+                      <p className="text-xs text-zinc-400">or click to browse files</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="mx-auto max-h-64 object-contain"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-zinc-500">{imageFile?.name}</p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-zinc-500"
+                        onClick={handleClearImage}
+                      >
+                        <Trash2 className="size-4" />
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {currentStep === 5 && (
+              <ReviewSection values={values} imagePreview={imagePreview} />
+            )}
           </div>
         </form>
       </CardContent>
