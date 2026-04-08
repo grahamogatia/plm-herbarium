@@ -13,6 +13,7 @@ import BatchUploadPage from "./pages/BatchUploadPage.tsx";
 import UploadImagePage from "./pages/UploadImagePage.tsx";
 import LoginPage from "./pages/LoginPage.tsx";
 import AdminPage from "./pages/AdminPage.tsx";
+import StatisticsPage from "./pages/StatisticsPage.tsx";
 
 function AppLayout() {
   return (
@@ -34,6 +35,7 @@ function App() {
         {/* Public routes */}
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/statistics" element={<StatisticsPage />} />
         <Route path="/collections" element={<Collection />} />
         <Route path="/collections/:accessionNo" element={<CollectionDetails />} />
         {/* Protected CRUD routes */}

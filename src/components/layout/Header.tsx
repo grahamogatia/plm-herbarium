@@ -30,6 +30,7 @@ function Header() {
     }`;
 
   const isHomePage = location.pathname === "/home" || location.pathname === "/";
+  const isStatisticsPage = location.pathname === "/statistics";
   const isCollectionPage = location.pathname.startsWith("/collections");
   const isAdminPage = location.pathname.startsWith("/admin");
 
@@ -54,7 +55,7 @@ function Header() {
             <button className={navButtonClass(isHomePage)} onClick={() => navigate("/home")}>
               Home
             </button>
-            <button className={navButtonClass(isHomePage)} onClick={() => navigate("/home")}>
+            <button className={navButtonClass(isStatisticsPage)} onClick={() => navigate("/statistics")}>
               Statistics
             </button>
             <button className={navButtonClass(isCollectionPage)} onClick={() => navigate("/collections")}>
@@ -101,7 +102,7 @@ function Header() {
             <button className={mobileNavClass(isHomePage)} onClick={() => navigate("/home")}>
               Home
             </button>
-            <button className={mobileNavClass(isHomePage)} onClick={() => navigate("/home")}>
+            <button className={mobileNavClass(isStatisticsPage)} onClick={() => navigate("/statistics")}>
               Statistics
             </button>
             <button className={mobileNavClass(isCollectionPage)} onClick={() => navigate("/collections")}>
