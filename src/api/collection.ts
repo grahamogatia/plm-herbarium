@@ -8,7 +8,7 @@ import {
   where,
   writeBatch,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage } from "@/api/database";
 import { writeLog } from "@/api/logs";
 import { SpecimenSchema } from "@/data/schemas";
@@ -386,11 +386,16 @@ export async function saveSpecimenEntry(
   return specimenId;
 }
 
+export type DeleteSpecimenResult = {
+  imageDeleted: boolean;
+  imageError?: string;
+};
+
 export async function softDeleteSpecimenByAccession(
   accessionNo: string,
   performedBy = "unknown",
   scientificName = "",
-): Promise<void> {
+): Promise<DeleteSpecimenResult> {
   const normalizedAccessionNo = accessionNo.trim();
   if (!normalizedAccessionNo) {
     throw new Error("Accession number is required.");
@@ -409,14 +414,46 @@ export async function softDeleteSpecimenByAccession(
     throw new Error("Specimen not found.");
   }
 
+  const specimenData = specimenDoc.data() as SpecimenDoc;
+  let imageDeleted = false;
+  let imageError: string | undefined;
+
+  if (specimenData.photo_url) {
+    try {
+      // Extract the storage path from the download URL instead of passing the
+      // full URL directly — download URLs contain query-string tokens that can
+      // cause ref() to fail silently on some Firebase SDK versions.
+      const decodedUrl = decodeURIComponent(specimenData.photo_url);
+      const pathMatch = decodedUrl.match(/\/o\/(.+?)(\?|$)/);
+
+      if (pathMatch?.[1]) {
+        const storagePath = pathMatch[1];
+        const imageRef = ref(storage, storagePath);
+        await deleteObject(imageRef);
+        imageDeleted = true;
+      } else {
+        // Fallback: try using the URL directly
+        const imageRef = ref(storage, specimenData.photo_url);
+        await deleteObject(imageRef);
+        imageDeleted = true;
+      }
+    } catch (error) {
+      imageError =
+        error instanceof Error ? error.message : "Failed to delete image from storage.";
+    }
+  }
+
   await updateDoc(specimenDoc.ref, {
     isDeleted: true,
+    photo_url: null,
   });
 
   await writeLog("specimen_delete", performedBy, `Deleted specimen ${normalizedAccessionNo}${scientificName ? ` (${scientificName})` : ""}`);
 
   collectionRowsCache = null;
   collectionRowsCacheTimestamp = 0;
+
+  return { imageDeleted, imageError };
 }
 
 export async function getCollectionRows(): Promise<CollectionRow[]> {

@@ -1,7 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { CalendarDays, Hash, ImageOff, Leaf, MapPin, Pencil, Trash2, Upload, UserRound } from "lucide-react";
 import { useState } from "react";
-import { softDeleteSpecimenByAccession, type CollectionRow } from "@/api/collection";
+import { softDeleteSpecimenByAccession, type CollectionRow, type DeleteSpecimenResult } from "@/api/collection";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -74,7 +74,7 @@ function ImageCell({ row }: ImageCellProps) {
 
 type DeleteSpecimenButtonProps = {
   row: CollectionRow;
-  onDeleted?: (row: CollectionRow) => void;
+  onDeleted?: (row: CollectionRow, result: DeleteSpecimenResult) => void;
 };
 
 function DeleteSpecimenButton({ row, onDeleted }: DeleteSpecimenButtonProps) {
@@ -84,8 +84,8 @@ function DeleteSpecimenButton({ row, onDeleted }: DeleteSpecimenButtonProps) {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      await softDeleteSpecimenByAccession(row.accessionNo, currentUser?.email ?? "unknown", row.taxon);
-      onDeleted?.(row);
+      const result = await softDeleteSpecimenByAccession(row.accessionNo, currentUser?.email ?? "unknown", row.taxon);
+      onDeleted?.(row, result);
     } catch (error) {
       const message =
         error instanceof Error
@@ -140,7 +140,7 @@ function DeleteSpecimenButton({ row, onDeleted }: DeleteSpecimenButtonProps) {
 }
 
 type SpecimenColumnsOptions = {
-  onDeleted?: (row: CollectionRow) => void;
+  onDeleted?: (row: CollectionRow, result: DeleteSpecimenResult) => void;
   isAuthenticated?: boolean;
 };
 

@@ -2,12 +2,12 @@ import CollectionFilters from "@/components/pages/collection/CollectionFilters";
 import CollectionHeader from "@/components/pages/collection/CollectionHeader";
 import CollectionGalleryView from "@/components/pages/collection/GalleryView";
 import TableView from "@/components/pages/collection/TableView";
-import { getCollectionRows, type CollectionRow } from "@/api/collection";
+import { getCollectionRows, type CollectionRow, type DeleteSpecimenResult } from "@/api/collection";
 import { useEffect, useMemo, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AddSpecimen from "@/components/pages/collection/AddSpecimen";
 import BatchUpload from "@/components/pages/collection/BatchUpload";
-import { Check } from "lucide-react";
+import { Check, AlertTriangle } from "lucide-react";
 import { ButtonGroup } from "@/components/ui/button-group";
 
 const COLLECTION_ROWS_STORAGE_KEY = "collectionRowsCache";
@@ -59,6 +59,7 @@ function Collection() {
   const [deleteToastAccessionNo, setDeleteToastAccessionNo] = useState<
     string | null
   >(null);
+  const [deleteResult, setDeleteResult] = useState<DeleteSpecimenResult | null>(null);
 
   const familyOptions = useMemo(
     () => Array.from(new Set(rows.map((row) => row.family))).sort(),
@@ -141,14 +142,15 @@ function Collection() {
 
     const timerId = window.setTimeout(() => {
       setDeleteToastAccessionNo(null);
-    }, 2000);
+      setDeleteResult(null);
+    }, 4000);
 
     return () => {
       window.clearTimeout(timerId);
     };
   }, [deleteToastAccessionNo]);
 
-  const handleDeleteRow = (deletedRow: CollectionRow) => {
+  const handleDeleteRow = (deletedRow: CollectionRow, result: DeleteSpecimenResult) => {
     setRows((prev) => {
       const next = prev.filter(
         (row) => row.accessionNo !== deletedRow.accessionNo,
@@ -157,6 +159,7 @@ function Collection() {
       return next;
     });
     setDeleteToastAccessionNo(deletedRow.accessionNo);
+    setDeleteResult(result);
   };
 
   return (
@@ -218,6 +221,18 @@ function Collection() {
             <span className="font-medium">Accession Code:</span>{" "}
             {deleteToastAccessionNo}
           </p>
+          {deleteResult?.imageDeleted && (
+            <p className="mt-1 flex items-center gap-1.5 text-xs text-lime-600">
+              <Check className="size-3" />
+              Image removed from storage
+            </p>
+          )}
+          {deleteResult?.imageError && (
+            <p className="mt-1 flex items-center gap-1.5 text-xs text-amber-600">
+              <AlertTriangle className="size-3" />
+              Image could not be removed: {deleteResult.imageError}
+            </p>
+          )}
         </div>
       ) : null}
     </>

@@ -1,4 +1,4 @@
-import type { CollectionRow } from "@/api/collection";
+import type { CollectionRow, DeleteSpecimenResult } from "@/api/collection";
 import { DataTable } from "@/components/ui/datatable";
 import { specimenColumns } from "@/data/columns";
 import { useAuth } from "@/context/AuthContext";
@@ -11,7 +11,7 @@ type TableViewProps = {
   rows: CollectionRow[];
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
-  onDeleteRow?: (row: CollectionRow) => void;
+  onDeleteRow?: (row: CollectionRow, result: DeleteSpecimenResult) => void;
 };
 
 function TableView({
