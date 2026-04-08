@@ -1,6 +1,7 @@
 import "./App.css";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import Header from "./components/layout/Header";
+import Footer from "./components/layout/Footer";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 import AdminRoute from "./components/layout/AdminRoute";
 import Home from "./pages/Home";
@@ -17,9 +18,10 @@ function AppLayout() {
   return (
     <div className="flex flex-col min-h-dvh">
       <Header />
-      <main>
+      <main className="flex-1">
         <Outlet />
       </main>
+      <Footer />
     </div>
   );
 }

@@ -17,8 +17,8 @@ function FullScreen({
           ? { backgroundImage: `url(${background})` }
           : undefined
       }
-      className={`w-screen min-h-[calc(100dvh-56px)]
-      flex  bg-cover bg-center bg-no-repeat ${className}`}
+      className={`w-full min-h-[calc(100dvh-56px)]
+      flex bg-cover bg-center bg-no-repeat ${className}`}
     >
       {children}
     </div>

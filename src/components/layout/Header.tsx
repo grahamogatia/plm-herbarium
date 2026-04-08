@@ -1,18 +1,32 @@
-import { Leaf } from "lucide-react";
+import { Leaf, Menu, X } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { useState, useEffect } from "react";
 
 function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser, isAdmin, logout } = useAuth();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
 
   const navButtonClass = (isActive: boolean) =>
     `cursor-pointer transition-colors underline-offset-4 ${
       isActive
         ? "font-bold underline text-gray-900"
         : "text-zinc-700 hover:text-gray-900 hover:underline"
+    }`;
+
+  const mobileNavClass = (isActive: boolean) =>
+    `w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
+      isActive
+        ? "bg-lime-50 text-lime-800 font-bold"
+        : "text-zinc-700 hover:bg-zinc-50"
     }`;
 
   const isHomePage = location.pathname === "/home" || location.pathname === "/";
@@ -25,41 +39,96 @@ function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full h-14 px-6 flex items-center justify-between bg-white">
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/home")}>
+    <header className="sticky top-0 z-50 w-full bg-white border-b border-zinc-100">
+      {/* Desktop & mobile top bar */}
+      <div className="flex h-14 items-center justify-between px-4 sm:px-6">
+        {/* Logo */}
+        <div className="flex items-center gap-2 cursor-pointer shrink-0" onClick={() => navigate("/home")}>
           <Leaf className="h-5 w-5 text-lime-700" />
-          <div className="text-lg font-semibold">PLM Botanical Herbarium</div>
+          <span className="text-base sm:text-lg font-semibold truncate">PLM Botanical Herbarium</span>
         </div>
-        <div className="text-lg leading-none text-zinc-400">|</div>
-        <nav className="flex items-center gap-6 text-sm font-medium">
-          <button className={navButtonClass(isHomePage)} onClick={() => navigate("/home")}>
-            Home
-          </button>
-          <button className={navButtonClass(isHomePage)} onClick={() => navigate("/home")}>
-            Statistics
-          </button>
-          <button className={navButtonClass(isCollectionPage)} onClick={() => navigate("/collections")}>
-            Collection
-          </button>
-          {isAdmin && (
-            <button className={navButtonClass(isAdminPage)} onClick={() => navigate("/admin")}>
-              Admin
+
+        {/* Desktop nav */}
+        <div className="hidden md:flex items-center gap-4">
+          <div className="text-lg leading-none text-zinc-400">|</div>
+          <nav className="flex items-center gap-6 text-sm font-medium">
+            <button className={navButtonClass(isHomePage)} onClick={() => navigate("/home")}>
+              Home
             </button>
-          )}
-        </nav>
-      </div>
-      {currentUser ? (
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-zinc-500">{currentUser.email}</span>
-          <Button variant="outline" size="sm" onClick={handleLogout}>
-            Logout
-          </Button>
+            <button className={navButtonClass(isHomePage)} onClick={() => navigate("/home")}>
+              Statistics
+            </button>
+            <button className={navButtonClass(isCollectionPage)} onClick={() => navigate("/collections")}>
+              Collection
+            </button>
+            {isAdmin && (
+              <button className={navButtonClass(isAdminPage)} onClick={() => navigate("/admin")}>
+                Admin
+              </button>
+            )}
+          </nav>
         </div>
-      ) : (
-        <Button className="bg-lime-700 hover:bg-lime-800 text-white" onClick={() => navigate("/login")}>
-          Login
-        </Button>
+
+        {/* Desktop auth */}
+        <div className="hidden md:flex items-center gap-2">
+          {currentUser ? (
+            <>
+              <span className="text-sm text-zinc-500 truncate max-w-40">{currentUser.email}</span>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                Logout
+              </Button>
+            </>
+          ) : (
+            <Button className="bg-lime-700 hover:bg-lime-800 text-white" onClick={() => navigate("/login")}>
+              Login
+            </Button>
+          )}
+        </div>
+
+        {/* Mobile hamburger */}
+        <button
+          className="md:hidden flex items-center justify-center h-9 w-9 rounded-md text-zinc-700 hover:bg-zinc-100 transition-colors"
+          onClick={() => setMobileOpen((v) => !v)}
+          aria-label={mobileOpen ? "Close menu" : "Open menu"}
+        >
+          {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+        </button>
+      </div>
+
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div className="md:hidden border-t border-zinc-100 bg-white">
+          <nav className="flex flex-col py-2">
+            <button className={mobileNavClass(isHomePage)} onClick={() => navigate("/home")}>
+              Home
+            </button>
+            <button className={mobileNavClass(isHomePage)} onClick={() => navigate("/home")}>
+              Statistics
+            </button>
+            <button className={mobileNavClass(isCollectionPage)} onClick={() => navigate("/collections")}>
+              Collection
+            </button>
+            {isAdmin && (
+              <button className={mobileNavClass(isAdminPage)} onClick={() => navigate("/admin")}>
+                Admin
+              </button>
+            )}
+          </nav>
+          <div className="border-t border-zinc-100 px-4 py-3">
+            {currentUser ? (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm text-zinc-500 truncate">{currentUser.email}</span>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  Logout
+                </Button>
+              </div>
+            ) : (
+              <Button className="w-full bg-lime-700 hover:bg-lime-800 text-white" onClick={() => navigate("/login")}>
+                Login
+              </Button>
+            )}
+          </div>
+        </div>
       )}
     </header>
   );

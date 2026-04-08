@@ -18,14 +18,14 @@ function StatContainer({
     <div
       className={`flex items-center gap-4 rounded-2xl ${className}`}
     >
-      <div className="flex flex-col items-center gap-3">
-        <div className="flex items-center justify-center text-center [&_svg]:size-12 text-lime-700">
+      <div className="flex flex-col items-center gap-2 sm:gap-3">
+        <div className="flex items-center justify-center text-center [&_svg]:size-8 sm:[&_svg]:size-12 text-lime-700">
           {icon}
         </div>
         <TypographyH1>
-          <p className="text-4xl">{number}</p>
+          <p className="text-2xl sm:text-4xl">{number}</p>
         </TypographyH1>
-        <div className=" text-zinc-500">{title}</div>
+        <div className="text-sm sm:text-base text-zinc-500">{title}</div>
       </div>
     </div>
   );

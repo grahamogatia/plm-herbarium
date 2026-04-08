@@ -9,7 +9,7 @@ import statwc from "@/assets/statwc.png";
 function StatisticsSection() {
   return (
     <FullScreen title="Statistics" background={statwc}>
-      <div className="pt-28 pb-28 pl-20 pr-20 flex flex-col flex-1 h-full">
+      <div className="px-4 py-12 sm:px-10 sm:py-16 lg:px-20 lg:py-28 flex flex-col flex-1 h-full">
         <div>
           <TypographyH2>
             <p>Digital Collection</p>
@@ -18,7 +18,7 @@ function StatisticsSection() {
             <p className="text-lime-700">569 Specimen</p>
           </TypographyH1>
         </div>
-        <div className="pt-10 flex gap-4">
+        <div className="pt-8 sm:pt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatContainer
             title="Locations"
             icon={<CircleCheck />}
@@ -36,7 +36,7 @@ function StatisticsSection() {
           />
         </div>
       </div>
-      <div className="flex-1"></div>
+      <div className="hidden lg:block flex-1"></div>
     </FullScreen>
   );
 }

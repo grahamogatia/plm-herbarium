@@ -138,15 +138,15 @@ function CollectionDetails() {
     : "Loading...";
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-56px)] overflow-hidden">
+    <div className="flex flex-col min-h-[calc(100dvh-56px)]">
       <div className="bg-zinc-900 p-4 w-full text-zinc-50 italic shrink-0">
         <TypographyH2>{taxonFromRoute ?? "Specimen"}</TypographyH2>
       </div>
 
       <div className="p-4 flex-1 min-h-0">
-        <div className="flex w-full h-full gap-4 items-stretch">
-          {/* Left side (image) */}
-          <div className="basis-[70%] shrink-0 min-w-0 relative">
+        <div className="flex flex-col lg:flex-row w-full h-full gap-4">
+          {/* Image viewer */}
+          <div className="w-full lg:basis-[70%] shrink-0 min-w-0 relative h-[50vh] lg:h-auto">
             <div
               className="relative flex w-full h-full items-center justify-center overflow-hidden rounded-md border border-zinc-950 bg-zinc-950"
               onWheel={handleWheel}
@@ -210,13 +210,13 @@ function CollectionDetails() {
             )}
           </div>
 
-          {/* Right side */}
+          {/* Info panel */}
           <div className="flex-1 min-w-0 overflow-y-auto">
             <div className="w-full h-full flex justify-center rounded-md">
-              <Tabs defaultValue="summary" className="w-100">
+              <Tabs defaultValue="summary" className="w-full max-w-md">
                 <TabsList>
                   <TabsTrigger value="summary">Summary</TabsTrigger>
-                  <TabsTrigger value="taxon">Taxon Classification</TabsTrigger>
+                  <TabsTrigger value="taxon">Taxon</TabsTrigger>
                   <TabsTrigger value="locality">Locality</TabsTrigger>
                 </TabsList>
                 <div className="p-2">

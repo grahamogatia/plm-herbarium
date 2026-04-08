@@ -12,17 +12,17 @@ function TaxonClassification({ species }: TaxonClassificationProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex gap-15">
+      <div className="grid grid-cols-2 gap-4">
         <LabelDesc label="Kingdom">Lorem Ipsum</LabelDesc>
         <LabelDesc label="Family">{species?.family ?? "Loading..."}</LabelDesc>
       </div>
-      <div className="flex gap-15">
+      <div className="grid grid-cols-2 gap-4">
         <LabelDesc label="Phyllum">Lorem Ipsum</LabelDesc>
         <LabelDesc label="Genus">
           <span className="italic">{genus}</span>
         </LabelDesc>
       </div>
-      <div className="flex gap-15">
+      <div className="grid grid-cols-2 gap-4">
         <LabelDesc label="Class">Lorem Ipsum</LabelDesc>
         <LabelDesc label="Species">
           <div className="italic">
