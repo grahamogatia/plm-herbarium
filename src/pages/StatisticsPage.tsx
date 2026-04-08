@@ -26,7 +26,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Leaf, Sprout } from "lucide-react";
+import { Leaf } from "lucide-react";
 import { TypographyH2 } from "@/components/ui/typography/typographyH2";
 
 // Lime / green palette that matches the site theme
