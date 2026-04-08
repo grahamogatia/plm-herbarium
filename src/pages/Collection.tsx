@@ -3,6 +3,7 @@ import CollectionHeader from "@/components/pages/collection/CollectionHeader";
 import CollectionGalleryView from "@/components/pages/collection/GalleryView";
 import TableView from "@/components/pages/collection/TableView";
 import { getCollectionRows, type CollectionRow, type DeleteSpecimenResult } from "@/api/collection";
+import { getHerbariumConfig, type HerbariumConfig } from "@/api/config";
 import { useEffect, useMemo, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AddSpecimen from "@/components/pages/collection/AddSpecimen";
@@ -60,6 +61,7 @@ function Collection() {
     string | null
   >(null);
   const [deleteResult, setDeleteResult] = useState<DeleteSpecimenResult | null>(null);
+  const [herbariumConfig, setHerbariumConfig] = useState<HerbariumConfig | null>(null);
 
   const familyOptions = useMemo(
     () => Array.from(new Set(rows.map((row) => row.family))).sort(),
@@ -129,6 +131,10 @@ function Collection() {
     };
 
     loadRows();
+
+    getHerbariumConfig()
+      .then((cfg) => { if (isMounted) setHerbariumConfig(cfg); })
+      .catch(() => { /* use defaults if config fails */ });
 
     return () => {
       isMounted = false;
@@ -200,6 +206,7 @@ function Collection() {
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
           onDeleteRow={handleDeleteRow}
+          visibleAttributes={herbariumConfig?.tableAttributes}
         />
       ) : (
         <CollectionGalleryView

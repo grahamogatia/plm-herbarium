@@ -17,6 +17,7 @@ import {
 
 import FieldBlock from "./FieldBlock";
 import type { FormErrors, FormValues } from "./types";
+import type { FormFieldKey } from "@/api/config";
 
 const CONSERVATION_LABELS: Record<string, string> = {
   EX: "EX – Extinct",
@@ -36,6 +37,8 @@ type Props = {
   nativityOptions: readonly string[];
   onFieldChange: (key: keyof FormValues, value: string) => void;
   isAccessionReadOnly?: boolean;
+  requiredFields: FormFieldKey[];
+  accessionPattern?: string;
 };
 
 function SpeciesSection({
@@ -46,6 +49,8 @@ function SpeciesSection({
   nativityOptions,
   onFieldChange,
   isAccessionReadOnly = false,
+  requiredFields,
+  accessionPattern,
 }: Props) {
   const filteredFamilyOptions = useMemo(() => {
     const query = values.family.trim().toLowerCase();
@@ -64,24 +69,27 @@ function SpeciesSection({
         label="Accession Number"
         htmlFor="accessionNo"
         error={errors.accesssion_no}
-        required
+        required={requiredFields.includes("accesssion_no")}
       >
         <Input
           id="accessionNo"
           className="h-10"
-          placeholder="e.g. PLM-2026-001"
+          placeholder={accessionPattern ? `e.g. ${accessionPattern.replace(/#/g, "0")}` : "e.g. PLM-2026-001"}
           value={values.accesssion_no}
           readOnly={isAccessionReadOnly}
           disabled={isAccessionReadOnly}
           onChange={(event) => onFieldChange("accesssion_no", event.target.value)}
         />
+        {accessionPattern && (
+          <p className="text-xs text-muted-foreground mt-1">Pattern: {accessionPattern}</p>
+        )}
       </FieldBlock>
 
       <FieldBlock
         label="Scientific Name"
         htmlFor="scientificName"
         error={errors.scientific_name}
-        required
+        required={requiredFields.includes("scientific_name")}
       >
         <Input
           id="scientificName"
@@ -96,6 +104,7 @@ function SpeciesSection({
         label="Common Name"
         htmlFor="commonName"
         error={errors.common_name}
+        required={requiredFields.includes("common_name")}
       >
         <Input
           id="commonName"
@@ -106,7 +115,7 @@ function SpeciesSection({
         />
       </FieldBlock>
 
-      <FieldBlock label="Family" htmlFor="family" error={errors.family} required>
+      <FieldBlock label="Family" htmlFor="family" error={errors.family} required={requiredFields.includes("family")}>
         <Combobox
           value={values.family || null}
           inputValue={values.family}
@@ -140,6 +149,7 @@ function SpeciesSection({
         label="Conservation Status"
         htmlFor="conservation"
         error={errors.conservation_status}
+        required={requiredFields.includes("conservation_status")}
       >
         <Select
           value={values.conservation_status || undefined}
@@ -158,7 +168,7 @@ function SpeciesSection({
         </Select>
       </FieldBlock>
 
-      <FieldBlock label="Nativity" htmlFor="nativity" error={errors.nativity}>
+      <FieldBlock label="Nativity" htmlFor="nativity" error={errors.nativity} required={requiredFields.includes("nativity")}>
         <Select
           value={values.nativity || undefined}
           onValueChange={(value) => onFieldChange("nativity", value)}

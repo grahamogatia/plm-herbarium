@@ -139,17 +139,20 @@ function DeleteSpecimenButton({ row, onDeleted }: DeleteSpecimenButtonProps) {
   );
 }
 
+import type { TableAttribute } from "@/api/config";
+
 type SpecimenColumnsOptions = {
   onDeleted?: (row: CollectionRow, result: DeleteSpecimenResult) => void;
   isAuthenticated?: boolean;
+  visibleAttributes?: TableAttribute[];
 };
 
 export function specimenColumns(
   options: SpecimenColumnsOptions = {},
 ): ColumnDef<CollectionRow>[] {
-  const { onDeleted, isAuthenticated = false } = options;
+  const { onDeleted, isAuthenticated = false, visibleAttributes } = options;
 
-  return [
+  const allColumns: (ColumnDef<CollectionRow> & { id?: string; accessorKey?: string })[] = [
   {
     id: "image",
     header: "Image",
@@ -225,33 +228,50 @@ export function specimenColumns(
         Locality
       </span>
     ),
-    cell: ({ getValue, row }) => (
-      <div className="relative flex w-full min-w-55 items-center pr-20 text-zinc-700">
+    cell: ({ getValue }) => (
+      <div className="flex w-full min-w-55 items-center text-zinc-700">
         <span className="truncate">{String(getValue() ?? "-")}</span>
-
-        {isAuthenticated && (
-          <div
-            data-row-actions
-            className="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-center gap-1.5 bg-linear-to-l from-white via-white to-transparent pl-6 opacity-0 transition-opacity duration-150 group-hover/row:pointer-events-auto group-hover/row:opacity-100 group-focus-within/row:pointer-events-auto group-focus-within/row:opacity-100"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <Button
-              asChild
-              variant="outline"
-              size="icon-xs"
-              className="h-7 w-7 rounded-md border-zinc-300 bg-white text-zinc-600 shadow-sm hover:border-lime-400 hover:bg-lime-50 hover:text-lime-700"
-              aria-label={`Update specimen ${row.original.accessionNo}`}
-              title="Update"
-            >
-              <Link to={`/collections/update/${encodeURIComponent(row.original.accessionNo)}`}>
-                <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-              </Link>
-            </Button>
-            <DeleteSpecimenButton row={row.original} onDeleted={onDeleted} />
-          </div>
-        )}
       </div>
     ),
   },
   ];
+
+  // Add actions column for authenticated users (always last, not filterable)
+  if (isAuthenticated) {
+    allColumns.push({
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <div
+          className="flex items-center justify-end gap-1.5"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <Button
+            asChild
+            variant="outline"
+            size="icon-xs"
+            className="h-7 w-7 rounded-md border-zinc-300 bg-white text-zinc-600 shadow-sm hover:border-lime-400 hover:bg-lime-50 hover:text-lime-700"
+            aria-label={`Update specimen ${row.original.accessionNo}`}
+            title="Update"
+          >
+            <Link to={`/collections/update/${encodeURIComponent(row.original.accessionNo)}`}>
+              <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          </Button>
+          <DeleteSpecimenButton row={row.original} onDeleted={onDeleted} />
+        </div>
+      ),
+    });
+  }
+
+  if (!visibleAttributes || visibleAttributes.length === 0) {
+    return allColumns;
+  }
+
+  return allColumns.filter((col) => {
+    const key = col.id ?? col.accessorKey ?? "";
+    // Actions column is always visible
+    if (key === "actions") return true;
+    return visibleAttributes.includes(key as TableAttribute);
+  });
 }

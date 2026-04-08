@@ -13,16 +13,18 @@ import { REGION_OPTIONS } from "@/data/regions";
 
 import FieldBlock from "./FieldBlock";
 import type { FormErrors, FormValues } from "./types";
+import type { FormFieldKey } from "@/api/config";
 
 type Props = {
   values: FormValues;
   errors: FormErrors;
   onFieldChange: (key: keyof FormValues, value: string) => void;
+  requiredFields: FormFieldKey[];
 };
 
 const DECIMAL_COORDINATE_PATTERN = /^-?\d*(\.\d*)?$/;
 
-function LocationSection({ values, errors, onFieldChange }: Props) {
+function LocationSection({ values, errors, onFieldChange, requiredFields }: Props) {
   const [provinceQuery, setProvinceQuery] = useState(values.province);
   const [regionQuery, setRegionQuery] = useState(values.region);
 
@@ -85,7 +87,7 @@ function LocationSection({ values, errors, onFieldChange }: Props) {
       </div>
 
       <div className="sm:col-span-2">
-        <FieldBlock label="Locality" htmlFor="locality" error={errors.locality} required>
+        <FieldBlock label="Locality" htmlFor="locality" error={errors.locality} required={requiredFields.includes("locality")}>
           <Textarea
             id="locality"
             className="min-h-20"
@@ -96,7 +98,7 @@ function LocationSection({ values, errors, onFieldChange }: Props) {
         </FieldBlock>
       </div>
 
-      <FieldBlock label="Province" htmlFor="province" error={errors.province}>
+      <FieldBlock label="Province" htmlFor="province" error={errors.province} required={requiredFields.includes("province")}>
         <Combobox
           value={values.province || null}
           inputValue={provinceQuery}
@@ -126,7 +128,7 @@ function LocationSection({ values, errors, onFieldChange }: Props) {
         </Combobox>
       </FieldBlock>
 
-      <FieldBlock label="Region" htmlFor="region" error={errors.region} required>
+      <FieldBlock label="Region" htmlFor="region" error={errors.region} required={requiredFields.includes("region")}>
         <Combobox
           value={values.region || null}
           inputValue={regionQuery}
@@ -156,7 +158,7 @@ function LocationSection({ values, errors, onFieldChange }: Props) {
         </Combobox>
       </FieldBlock>
 
-      <FieldBlock label="Latitude" htmlFor="latitude" error={errors.latitude}>
+      <FieldBlock label="Latitude" htmlFor="latitude" error={errors.latitude} required={requiredFields.includes("latitude")}>
         <Input
           id="latitude"
           className="h-10"
@@ -168,7 +170,7 @@ function LocationSection({ values, errors, onFieldChange }: Props) {
         <p className="text-xs text-muted-foreground">Decimal degrees, range: -90 to 90</p>
       </FieldBlock>
 
-      <FieldBlock label="Longitude" htmlFor="longitude" error={errors.longitude}>
+      <FieldBlock label="Longitude" htmlFor="longitude" error={errors.longitude} required={requiredFields.includes("longitude")}>
         <Input
           id="longitude"
           className="h-10"

@@ -11,6 +11,7 @@ import {
 
 import FieldBlock from "./FieldBlock";
 import type { FormErrors, FormValues } from "./types";
+import type { FormFieldKey } from "@/api/config";
 
 type Props = {
   values: FormValues;
@@ -19,6 +20,7 @@ type Props = {
   onCollectorNameChange: (index: number, value: string) => void;
   onAddCollector: () => void;
   onRemoveCollector: (index: number) => void;
+  requiredFields: FormFieldKey[];
 };
 
 function CollectorSection({
@@ -28,6 +30,7 @@ function CollectorSection({
   onCollectorNameChange,
   onAddCollector,
   onRemoveCollector,
+  requiredFields,
 }: Props) {
   return (
     <div className="max-w-2xl space-y-3">
@@ -35,7 +38,7 @@ function CollectorSection({
         label="Collector(s)"
         htmlFor="collectorName"
         error={errors.collector_names}
-        required
+        required={requiredFields.includes("collector_names")}
       >
         <p className="text-xs text-muted-foreground">
           Format: A. Surname or A. B. Surname

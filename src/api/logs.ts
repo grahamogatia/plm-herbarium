@@ -17,7 +17,8 @@ export type LogAction =
   | "specimen_delete"
   | "user_add"
   | "user_remove"
-  | "user_role_change";
+  | "user_role_change"
+  | "config_update";
 
 export interface LogEntry {
   id: string;

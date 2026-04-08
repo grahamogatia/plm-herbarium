@@ -3,17 +3,20 @@ import { Textarea } from "@/components/ui/textarea";
 
 import FieldBlock from "./FieldBlock";
 import type { FormErrors, FormValues } from "./types";
+import type { FormFieldKey } from "@/api/config";
 
 type Props = {
   values: FormValues;
   errors: FormErrors;
   onFieldChange: (key: keyof FormValues, value: string) => void;
+  requiredFields: FormFieldKey[];
 };
 
 function DetailsSection({
   values,
   errors,
   onFieldChange,
+  requiredFields,
 }: Props) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -21,7 +24,7 @@ function DetailsSection({
         label="Date Collected"
         htmlFor="dateCollected"
         error={errors.date_collected}
-        required
+        required={requiredFields.includes("date_collected")}
       >
         <Input
           id="dateCollected"
@@ -33,7 +36,7 @@ function DetailsSection({
       </FieldBlock>
 
       <div className="sm:col-span-2">
-        <FieldBlock label="Habit" htmlFor="habit" error={errors.habit} required>
+        <FieldBlock label="Habit" htmlFor="habit" error={errors.habit} required={requiredFields.includes("habit")}>
           <Textarea
             id="habit"
             className="min-h-20"
@@ -45,7 +48,7 @@ function DetailsSection({
       </div>
 
       <div className="sm:col-span-2">
-        <FieldBlock label="Habitat" htmlFor="habitat" error={errors.habitat}>
+        <FieldBlock label="Habitat" htmlFor="habitat" error={errors.habitat} required={requiredFields.includes("habitat")}>
           <Textarea
             id="habitat"
             className="min-h-20"
@@ -59,6 +62,7 @@ function DetailsSection({
         label="Altitude (masl)"
         htmlFor="altitude"
         error={errors.altitude_masl}
+        required={requiredFields.includes("altitude_masl")}
       >
         <Input
           id="altitude"
@@ -77,6 +81,7 @@ function DetailsSection({
         label="Plant Height (m)"
         htmlFor="height"
         error={errors.plant_height_m}
+        required={requiredFields.includes("plant_height_m")}
       >
         <Input
           id="height"
@@ -91,7 +96,7 @@ function DetailsSection({
         />
       </FieldBlock>
 
-      <FieldBlock label="DBH (cm)" htmlFor="dbh" error={errors.dbh_cm}>
+      <FieldBlock label="DBH (cm)" htmlFor="dbh" error={errors.dbh_cm} required={requiredFields.includes("dbh_cm")}>
         <Input
           id="dbh"
           type="number"
@@ -106,7 +111,7 @@ function DetailsSection({
       </FieldBlock>
 
       <div className="sm:col-span-2">
-        <FieldBlock label="Flower Description" htmlFor="flower">
+        <FieldBlock label="Flower Description" htmlFor="flower" required={requiredFields.includes("flower_description")}>
           <Textarea
             id="flower"
             className="min-h-20"
@@ -119,7 +124,7 @@ function DetailsSection({
       </div>
 
       <div className="sm:col-span-2">
-        <FieldBlock label="Fruit Description" htmlFor="fruit">
+        <FieldBlock label="Fruit Description" htmlFor="fruit" required={requiredFields.includes("fruit_description")}>
           <Textarea
             id="fruit"
             className="min-h-20"
@@ -132,7 +137,7 @@ function DetailsSection({
       </div>
 
       <div className="sm:col-span-2">
-        <FieldBlock label="Leaf Description" htmlFor="leaf">
+        <FieldBlock label="Leaf Description" htmlFor="leaf" required={requiredFields.includes("leaf_description")}>
           <Textarea
             id="leaf"
             className="min-h-20"
@@ -145,7 +150,7 @@ function DetailsSection({
       </div>
 
       <div className="sm:col-span-2">
-        <FieldBlock label="Notes" htmlFor="notes" error={errors.notes}>
+        <FieldBlock label="Notes" htmlFor="notes" error={errors.notes} required={requiredFields.includes("notes")}>
           <Textarea
             id="notes"
             className="min-h-24"

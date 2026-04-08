@@ -1,4 +1,5 @@
 import type { CollectionRow, DeleteSpecimenResult } from "@/api/collection";
+import type { TableAttribute } from "@/api/config";
 import { DataTable } from "@/components/ui/datatable";
 import { specimenColumns } from "@/data/columns";
 import { useAuth } from "@/context/AuthContext";
@@ -12,6 +13,7 @@ type TableViewProps = {
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
   onDeleteRow?: (row: CollectionRow, result: DeleteSpecimenResult) => void;
+  visibleAttributes?: TableAttribute[];
 };
 
 function TableView({
@@ -21,12 +23,13 @@ function TableView({
   searchQuery,
   onSearchQueryChange,
   onDeleteRow,
+  visibleAttributes,
 }: TableViewProps) {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const columns = useMemo(
-    () => specimenColumns({ onDeleted: onDeleteRow, isAuthenticated: !!currentUser }),
-    [onDeleteRow, currentUser],
+    () => specimenColumns({ onDeleted: onDeleteRow, isAuthenticated: !!currentUser, visibleAttributes }),
+    [onDeleteRow, currentUser, visibleAttributes],
   );
 
   if (isLoading) {

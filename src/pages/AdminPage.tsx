@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { CalendarDays, ClipboardList, Plus, Shield, Trash2, UserPlus, Users, X } from "lucide-react";
+import { CalendarDays, Check, ClipboardList, Plus, Settings, Shield, Trash2, UserPlus, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,11 +11,26 @@ import {
 } from "@/api/users";
 import { getLogs, writeLog, type LogAction, type LogEntry } from "@/api/logs";
 import { useAuth } from "@/context/AuthContext";
+import {
+  getHerbariumConfig,
+  saveHerbariumConfig,
+  ALL_FORM_FIELDS,
+  FORM_FIELD_LABELS,
+  ALL_TABLE_ATTRIBUTES,
+  TABLE_ATTRIBUTE_LABELS,
+  ALL_SUMMARY_FIELDS,
+  SUMMARY_FIELD_LABELS,
+  SUMMARY_FIELD_TABS,
+  type HerbariumConfig,
+  type FormFieldKey,
+  type TableAttribute,
+  type SummaryField,
+} from "@/api/config";
 
 function AdminPage() {
   const { currentUser } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<"users" | "logs">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "logs" | "config">("users");
 
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -43,6 +58,12 @@ function AdminPage() {
   const [confirmRemoveUid, setConfirmRemoveUid] = useState<string | null>(null);
   const [removeLoading, setRemoveLoading] = useState(false);
 
+  // Config state
+  const [config, setConfig] = useState<HerbariumConfig | null>(null);
+  const [loadingConfig, setLoadingConfig] = useState(false);
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [configSaved, setConfigSaved] = useState(false);
+
   useEffect(() => {
     void fetchUsers();
   }, []);
@@ -50,6 +71,9 @@ function AdminPage() {
   useEffect(() => {
     if (activeTab === "logs") {
       void fetchLogs();
+    }
+    if (activeTab === "config") {
+      void fetchConfig();
     }
   }, [activeTab]);
 
@@ -140,6 +164,59 @@ function AdminPage() {
     await fetchUsers();
   }
 
+  async function fetchConfig() {
+    setLoadingConfig(true);
+    try {
+      const data = await getHerbariumConfig();
+      setConfig(data);
+    } finally {
+      setLoadingConfig(false);
+    }
+  }
+
+  async function handleSaveConfig() {
+    if (!config) return;
+    setSavingConfig(true);
+    try {
+      await saveHerbariumConfig(config);
+      await writeLog("config_update", currentUser?.email ?? "admin", "Updated herbarium configuration");
+      setConfigSaved(true);
+      setTimeout(() => setConfigSaved(false), 2000);
+    } finally {
+      setSavingConfig(false);
+    }
+  }
+
+  function toggleRequiredField(field: FormFieldKey) {
+    if (!config) return;
+    setConfig({
+      ...config,
+      requiredFields: config.requiredFields.includes(field)
+        ? config.requiredFields.filter((f) => f !== field)
+        : [...config.requiredFields, field],
+    });
+  }
+
+  function toggleTableAttribute(attr: TableAttribute) {
+    if (!config) return;
+    setConfig({
+      ...config,
+      tableAttributes: config.tableAttributes.includes(attr)
+        ? config.tableAttributes.filter((a) => a !== attr)
+        : [...config.tableAttributes, attr],
+    });
+  }
+
+  function toggleSummaryField(field: SummaryField) {
+    if (!config) return;
+    setConfig({
+      ...config,
+      summaryFields: config.summaryFields.includes(field)
+        ? config.summaryFields.filter((f) => f !== field)
+        : [...config.summaryFields, field],
+    });
+  }
+
   return (
     <>
       {/* Page header */}
@@ -175,6 +252,17 @@ function AdminPage() {
           >
             <ClipboardList className="size-4" />
             Activity Logs
+          </button>
+          <button
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "config"
+                ? "border-lime-600 text-zinc-900"
+                : "border-transparent text-zinc-500 hover:text-zinc-800"
+            }`}
+            onClick={() => setActiveTab("config")}
+          >
+            <Settings className="size-4" />
+            Configurations
           </button>
         </div>
       </div>
@@ -552,6 +640,158 @@ function AdminPage() {
         </div>
       )}
 
+      {/* Configurations tab */}
+      {activeTab === "config" && (
+        <div className="p-4 md:p-6 max-w-4xl">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-zinc-800">Herbarium Configurations</h2>
+            <Button
+              size="sm"
+              className="bg-zinc-900 hover:bg-zinc-800 text-zinc-50 gap-2"
+              onClick={() => void handleSaveConfig()}
+              disabled={savingConfig || loadingConfig || !config}
+            >
+              {configSaved ? (
+                <>
+                  <Check className="size-4" />
+                  Saved
+                </>
+              ) : savingConfig ? (
+                "Saving..."
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </div>
+
+          {loadingConfig || !config ? (
+            <div className="p-6 text-sm text-zinc-500">Loading configurations...</div>
+          ) : (
+            <div className="space-y-8">
+              {/* 1. Accession Code Pattern */}
+              <section>
+                <h3 className="text-sm font-semibold text-zinc-800 mb-1">Accession Code Pattern</h3>
+                <p className="text-xs text-zinc-500 mb-3">
+                  Define the accession numbering format. Use <code className="rounded bg-zinc-100 px-1 py-0.5 text-[11px] font-mono">#</code> as a digit placeholder.
+                </p>
+                <Input
+                  value={config.accessionPattern}
+                  onChange={(e) => setConfig({ ...config, accessionPattern: e.target.value })}
+                  placeholder="e.g. PLMH-#-##-###"
+                  className="max-w-xs font-mono h-10"
+                />
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-xs text-zinc-400">Preview:</span>
+                  <span className="rounded bg-zinc-100 px-2 py-1 font-mono text-xs text-zinc-700">
+                    {config.accessionPattern.replace(/#/g, () => String(Math.floor(Math.random() * 10)))}
+                  </span>
+                </div>
+              </section>
+
+              <hr className="border-zinc-200" />
+
+              {/* 2. Required Fields */}
+              <section>
+                <h3 className="text-sm font-semibold text-zinc-800 mb-1">Required Fields</h3>
+                <p className="text-xs text-zinc-500 mb-3">
+                  Select which fields are required when adding a new specimen.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {ALL_FORM_FIELDS.map((field) => {
+                    const isActive = config.requiredFields.includes(field);
+                    return (
+                      <button
+                        key={field}
+                        onClick={() => toggleRequiredField(field)}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                          isActive
+                            ? "bg-lime-100 text-lime-800 ring-1 ring-lime-300"
+                            : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                        }`}
+                      >
+                        {isActive && <Check className="size-3" />}
+                        {FORM_FIELD_LABELS[field]}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <hr className="border-zinc-200" />
+
+              {/* 3. Table Attributes */}
+              <section>
+                <h3 className="text-sm font-semibold text-zinc-800 mb-1">Table Display Attributes</h3>
+                <p className="text-xs text-zinc-500 mb-3">
+                  Choose which columns appear in the collection table.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {ALL_TABLE_ATTRIBUTES.map((attr) => {
+                    const isActive = config.tableAttributes.includes(attr);
+                    return (
+                      <button
+                        key={attr}
+                        onClick={() => toggleTableAttribute(attr)}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                          isActive
+                            ? "bg-lime-100 text-lime-800 ring-1 ring-lime-300"
+                            : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                        }`}
+                      >
+                        {isActive && <Check className="size-3" />}
+                        {TABLE_ATTRIBUTE_LABELS[attr]}
+                      </button>
+                    );
+                  })}
+                </div>
+                {config.tableAttributes.length === 0 && (
+                  <p className="mt-2 text-xs text-amber-600">At least one column should be visible.</p>
+                )}
+              </section>
+
+              <hr className="border-zinc-200" />
+
+              {/* 4. Summary Display Fields */}
+              <section>
+                <h3 className="text-sm font-semibold text-zinc-800 mb-1">Specimen Summary Fields</h3>
+                <p className="text-xs text-zinc-500 mb-3">
+                  Choose which information appears on the specimen detail view. Fields are grouped by tab.
+                </p>
+                {(["Summary", "Taxon", "Locality", "Details"] as const).map((tab) => {
+                  const tabFields = ALL_SUMMARY_FIELDS.filter(
+                    (f) => SUMMARY_FIELD_TABS[f] === tab,
+                  );
+                  return (
+                    <div key={tab} className="mb-4">
+                      <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">{tab} Tab</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {tabFields.map((field) => {
+                          const isActive = config.summaryFields.includes(field);
+                          return (
+                            <button
+                              key={field}
+                              onClick={() => toggleSummaryField(field)}
+                              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                                isActive
+                                  ? "bg-lime-100 text-lime-800 ring-1 ring-lime-300"
+                                  : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                              }`}
+                            >
+                              {isActive && <Check className="size-3" />}
+                              {SUMMARY_FIELD_LABELS[field]}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </section>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Add User dialog */}
       {showDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -633,6 +873,7 @@ const ACTION_STYLES: Record<LogAction, { label: string; className: string }> = {
   user_add:         { label: "User Add",        className: "bg-lime-100 text-lime-800" },
   user_remove:      { label: "User Remove",     className: "bg-orange-100 text-orange-700" },
   user_role_change: { label: "Role Change",     className: "bg-violet-100 text-violet-700" },
+  config_update:    { label: "Config Update",   className: "bg-teal-100 text-teal-700" },
 };
 
 function LogActionBadge({ action }: { action: LogAction }) {

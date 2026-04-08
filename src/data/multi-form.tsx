@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { z } from "zod";
 import {
   Camera,
   Check,
@@ -37,11 +36,14 @@ import {
 } from "@/api/collection";
 import type { FormErrors, FormValues } from "@/components/pages/collection/multi-form/types";
 import {
-  CollectorSchema,
-  LocationSchema,
   SpeciesSchema,
-  SpecimenSchema,
 } from "@/data/schemas";
+import {
+  getHerbariumConfig,
+  FORM_FIELD_LABELS,
+  type FormFieldKey,
+  type HerbariumConfig,
+} from "@/api/config";
 
 const conservationOptions = SpeciesSchema.shape.conservation_status.unwrap().options;
 const nativityOptions = SpeciesSchema.shape.nativity.unwrap().options;
@@ -72,40 +74,20 @@ const initialValues: FormValues = {
   notes: "",
 };
 
-const speciesStepSchema = z.object({
-  accesssion_no: SpecimenSchema.shape.accesssion_no.min(1, "Accession number is required."),
-  scientific_name: SpeciesSchema.shape.scientific_name.min(1, "Scientific name is required."),
-  common_name: SpeciesSchema.shape.common_name,
-  family: SpeciesSchema.shape.family.min(1, "Family is required."),
-  conservation_status: SpeciesSchema.shape.conservation_status.optional(),
-  nativity: SpeciesSchema.shape.nativity.optional(),
-});
+// Map form fields to their step index
+const STEP_FIELDS: Record<number, FormFieldKey[]> = {
+  0: ["accesssion_no", "scientific_name", "common_name", "family", "conservation_status", "nativity"],
+  1: ["country", "locality", "province", "region", "latitude", "longitude"],
+  2: ["collector_names"],
+  3: ["date_collected", "habitat", "habit", "altitude_masl", "plant_height_m", "dbh_cm", "flower_description", "fruit_description", "leaf_description", "notes"],
+};
 
-const locationStepSchema = LocationSchema.omit({
-  location_id: true,
-}).extend({
-  locality: z.string().min(1, "Locality is required."),
-  region: z.string().min(1, "Region is required."),
-});
-
-const collectorStepSchema = CollectorSchema.omit({
-  collector_id: true,
-});
-
-const specimenDetailsStepSchema = SpecimenSchema.pick({
-  date_collected: true,
-  habitat: true,
-  habit: true,
-  altitude_masl: true,
-  plant_height_m: true,
-  dbh_cm: true,
-  flower_description: true,
-  fruit_description: true,
-  leaf_description: true,
-  notes: true,
-}).extend({
-  date_collected: z.date({ error: "Date collected is required." }),
-});
+/** Convert an accession pattern like "PLMH-#-##-###" into a RegExp (# = digit). */
+function accessionPatternToRegex(pattern: string): RegExp {
+  const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regexStr = escaped.replace(/#/g, "\\d");
+  return new RegExp(`^${regexStr}$`);
+}
 
 const steps = [
   {
@@ -151,20 +133,6 @@ const parseNullableNumber = (value: string): number | null =>
 const collectorNameFormatPattern =
   /^(?:\p{Lu}\.\s)+(?:\p{L}[\p{L}'-]*)(?:\s+\p{L}[\p{L}'-]*)*$/u;
 
-const issueMap = (error: z.ZodError): FormErrors => {
-  const mappedErrors: FormErrors = {};
-
-  for (const issue of error.issues) {
-    const key = issue.path[0] as keyof FormValues | undefined;
-    if (!key || mappedErrors[key]) {
-      continue;
-    }
-    mappedErrors[key] = issue.message;
-  }
-
-  return mappedErrors;
-};
-
 type SuccessSubmissionSummary = {
   accessionNo: string;
   scientificName: string;
@@ -196,6 +164,7 @@ export function MultiForm({
     useState<SuccessSubmissionSummary | null>(null);
   const [familyOptions, setFamilyOptions] = useState<string[]>([]);
   const [collectorOptions, setCollectorOptions] = useState<string[]>([]);
+  const [herbariumConfig, setHerbariumConfig] = useState<HerbariumConfig | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -205,9 +174,10 @@ export function MultiForm({
 
     const loadLookups = async () => {
       try {
-        const [families, collectors] = await Promise.all([
+        const [families, collectors, config] = await Promise.all([
           getSpeciesFamilies(),
           getCollectorNames(),
+          getHerbariumConfig(),
         ]);
 
         if (!isMounted) {
@@ -216,6 +186,7 @@ export function MultiForm({
 
         setFamilyOptions(families);
         setCollectorOptions(collectors);
+        setHerbariumConfig(config);
       } catch {
         if (!isMounted) {
           return;
@@ -270,123 +241,74 @@ export function MultiForm({
   };
 
   const validateStep = (step: number): boolean => {
-    if (step === 0) {
-      const parsed = speciesStepSchema.safeParse({
-        accesssion_no: values.accesssion_no,
-        scientific_name: values.scientific_name,
-        common_name: values.common_name || undefined,
-        family: values.family,
-        conservation_status: values.conservation_status || undefined,
-        nativity: values.nativity || undefined,
-      });
+    const requiredFields = herbariumConfig?.requiredFields ?? [];
+    const stepFields = STEP_FIELDS[step] ?? [];
+    const stepErrors: FormErrors = {};
 
-      if (!parsed.success) {
-        setErrors((prev) => ({ ...prev, ...issueMap(parsed.error) }));
-        return false;
+    // Config-driven required field checks
+    for (const field of stepFields) {
+      if (!requiredFields.includes(field)) continue;
+
+      if (field === "collector_names") {
+        const normalized = values.collector_names.map((c) => c.trim()).filter(Boolean);
+        if (normalized.length === 0) {
+          stepErrors.collector_names = "At least one collector is required.";
+        }
+      } else if (field === "date_collected") {
+        if (!values.date_collected) {
+          stepErrors.date_collected = "Date collected is required.";
+        }
+      } else {
+        const val = values[field];
+        if (typeof val === "string" && val.trim() === "") {
+          stepErrors[field] = `${FORM_FIELD_LABELS[field]} is required.`;
+        }
       }
-
-      return true;
     }
 
+    // Accession pattern validation (step 0)
+    if (step === 0 && herbariumConfig?.accessionPattern && values.accesssion_no.trim() !== "") {
+      const regex = accessionPatternToRegex(herbariumConfig.accessionPattern);
+      if (!regex.test(values.accesssion_no.trim())) {
+        stepErrors.accesssion_no =
+          stepErrors.accesssion_no ??
+          `Must match pattern: ${herbariumConfig.accessionPattern}`;
+      }
+    }
+
+    // Collector name format validation (step 2)
+    if (step === 2 && !stepErrors.collector_names) {
+      const normalized = values.collector_names.map((c) => c.trim()).filter(Boolean);
+      if (normalized.length > 0) {
+        const hasInvalidFormat = normalized.some(
+          (c) => !collectorNameFormatPattern.test(c),
+        );
+        if (hasInvalidFormat) {
+          stepErrors.collector_names =
+            "Use format: I. Surname or I. I. Surname (e.g., A. Dela Cruz or A. B. Dela Cruz).";
+        }
+      }
+    }
+
+    // Latitude / longitude range checks (step 1)
     if (step === 1) {
-      const parsed = locationStepSchema.safeParse({
-        country: values.country,
-        locality: values.locality,
-        province: values.province,
-        region: values.region,
-        latitude: parseOptionalNumber(values.latitude),
-        longitude: parseOptionalNumber(values.longitude),
-      });
-
-      if (!parsed.success) {
-        setErrors((prev) => ({ ...prev, ...issueMap(parsed.error) }));
-        return false;
+      if (values.latitude.trim() !== "") {
+        const lat = Number(values.latitude);
+        if (isNaN(lat) || lat < -90 || lat > 90) {
+          stepErrors.latitude = "Latitude must be between -90 and 90.";
+        }
       }
-
-      const rangeErrors: FormErrors = {};
-
-      if (
-        typeof parsed.data.latitude === "number" &&
-        (parsed.data.latitude < -90 || parsed.data.latitude > 90)
-      ) {
-        rangeErrors.latitude = "Latitude must be between -90 and 90.";
+      if (values.longitude.trim() !== "") {
+        const lon = Number(values.longitude);
+        if (isNaN(lon) || lon < -180 || lon > 180) {
+          stepErrors.longitude = "Longitude must be between -180 and 180.";
+        }
       }
-
-      if (
-        typeof parsed.data.longitude === "number" &&
-        (parsed.data.longitude < -180 || parsed.data.longitude > 180)
-      ) {
-        rangeErrors.longitude = "Longitude must be between -180 and 180.";
-      }
-
-      if (Object.keys(rangeErrors).length > 0) {
-        setErrors((prev) => ({ ...prev, ...rangeErrors }));
-        return false;
-      }
-
-      return true;
     }
 
-    if (step === 2) {
-      const normalizedCollectorNames = values.collector_names
-        .map((collectorName) => collectorName.trim())
-        .filter(Boolean);
-
-      if (normalizedCollectorNames.length === 0) {
-        setErrors((prev) => ({
-          ...prev,
-          collector_names: "At least one collector is required.",
-        }));
-        return false;
-      }
-
-      const hasInvalidCollectorSchema = normalizedCollectorNames.some((collectorName) => {
-        const parsed = collectorStepSchema.safeParse({
-          name: collectorName,
-        });
-
-        return !parsed.success;
-      });
-
-      const hasInvalidCollectorFormat = normalizedCollectorNames.some(
-        (collectorName) => !collectorNameFormatPattern.test(collectorName),
-      );
-
-      if (hasInvalidCollectorSchema || hasInvalidCollectorFormat) {
-        setErrors((prev) => ({
-          ...prev,
-          collector_names:
-            "Use format: I. Surname or I. I. Surname (e.g., A. Dela Cruz or A. B. Dela Cruz).",
-        }));
-        return false;
-      }
-
-      return true;
-    }
-
-    if (step === 3) {
-      const dateValue = values.date_collected
-        ? new Date(values.date_collected)
-        : undefined;
-      const parsed = specimenDetailsStepSchema.safeParse({
-        date_collected: dateValue,
-        habitat: values.habitat,
-        habit: values.habit,
-        altitude_masl: parseNumber(values.altitude_masl),
-        plant_height_m: parseNumber(values.plant_height_m),
-        dbh_cm: parseNullableNumber(values.dbh_cm),
-        flower_description: values.flower_description || undefined,
-        fruit_description: values.fruit_description || undefined,
-        leaf_description: values.leaf_description || undefined,
-        notes: values.notes,
-      });
-
-      if (!parsed.success) {
-        setErrors((prev) => ({ ...prev, ...issueMap(parsed.error) }));
-        return false;
-      }
-
-      return true;
+    if (Object.keys(stepErrors).length > 0) {
+      setErrors((prev) => ({ ...prev, ...stepErrors }));
+      return false;
     }
 
     return true;
@@ -456,134 +378,66 @@ export function MultiForm({
       return;
     }
 
-    if (!validateStep(currentStep)) {
-      return;
+    // Re-validate all data steps (0–3) before submission
+    for (let step = 0; step <= 3; step++) {
+      if (!validateStep(step)) {
+        setCurrentStep(step);
+        return;
+      }
     }
 
     setIsSubmitting(true);
     setSubmitMessage("");
     setSuccessSummary(null);
 
-    const species = {
-      species_id: 0,
-      family: values.family,
-      scientific_name: values.scientific_name,
-      common_name: values.common_name || undefined,
-      conservation_status: values.conservation_status || undefined,
-      nativity: values.nativity || undefined,
-    };
-
-    const location = {
-      location_id: 0,
-      country: values.country,
-      locality: values.locality,
-      province: values.province,
-      region: values.region,
-      latitude: parseOptionalNumber(values.latitude),
-      longitude: parseOptionalNumber(values.longitude),
-    };
-
     const normalizedCollectorNames = values.collector_names
       .map((collectorName) => collectorName.trim())
       .filter(Boolean);
 
-    const collectors = normalizedCollectorNames.map((collectorName, index) => ({
-      collector_id: index + 1,
-      name: collectorName,
-    }));
-
-    const specimen = {
-      specimen_id: 0,
-      accesssion_no: values.accesssion_no,
-      species_id: 0,
-      collector_ids: collectors.map((collector) => collector.collector_id),
-      location_id: 0,
-      date_collected: new Date(values.date_collected),
-      habitat: values.habitat,
-      habit: values.habit,
-      altitude_masl: parseNumber(values.altitude_masl),
-      plant_height_m: parseNumber(values.plant_height_m),
-      dbh_cm: parseNullableNumber(values.dbh_cm),
-      flower_description: values.flower_description || undefined,
-      fruit_description: values.fruit_description || undefined,
-      leaf_description: values.leaf_description || undefined,
-      notes: values.notes,
-    };
-
-    const speciesCheck = SpeciesSchema.safeParse(species);
-    const locationCheck = LocationSchema.safeParse(location);
-    const collectorChecks = collectors.map((collector) =>
-      CollectorSchema.safeParse(collector),
-    );
-    const hasCollectorError = collectorChecks.some((collectorCheck) => !collectorCheck.success);
-    const specimenCheck = SpecimenSchema.safeParse(specimen);
-
-    if (
-      !speciesCheck.success ||
-      !locationCheck.success ||
-      hasCollectorError ||
-      !specimenCheck.success
-    ) {
-      setSubmitMessage("Validation failed. Please review your inputs.");
-      setIsSubmitting(false);
-      return;
-    }
+    const collectorPayload = normalizedCollectorNames.map((name) => ({ name }));
 
     try {
-      const collectorPayload = collectorChecks
-        .filter(
-          (
-            collectorCheck,
-          ): collectorCheck is {
-            success: true;
-            data: z.infer<typeof CollectorSchema>;
-          } => collectorCheck.success,
-        )
-        .map((collectorCheck) => ({
-          name: collectorCheck.data.name,
-        }));
-
       await saveSpecimenEntry({
         species: {
-          family: speciesCheck.data.family,
-          scientific_name: speciesCheck.data.scientific_name,
-          common_name: speciesCheck.data.common_name,
-          conservation_status: speciesCheck.data.conservation_status,
-          nativity: speciesCheck.data.nativity,
+          family: values.family,
+          scientific_name: values.scientific_name,
+          common_name: values.common_name || undefined,
+          conservation_status: values.conservation_status || undefined,
+          nativity: values.nativity || undefined,
         },
         location: {
-          country: locationCheck.data.country,
-          locality: locationCheck.data.locality,
-          province: locationCheck.data.province,
-          region: locationCheck.data.region,
-          latitude: locationCheck.data.latitude,
-          longitude: locationCheck.data.longitude,
+          country: values.country,
+          locality: values.locality,
+          province: values.province,
+          region: values.region,
+          latitude: parseOptionalNumber(values.latitude),
+          longitude: parseOptionalNumber(values.longitude),
         },
         collectors: collectorPayload,
         specimen: {
-          accesssion_no: specimenCheck.data.accesssion_no,
-          date_collected: specimenCheck.data.date_collected,
-          habitat: specimenCheck.data.habitat,
-          habit: specimenCheck.data.habit,
-          altitude_masl: specimenCheck.data.altitude_masl,
-          plant_height_m: specimenCheck.data.plant_height_m,
-          dbh_cm: specimenCheck.data.dbh_cm,
-          flower_description: specimenCheck.data.flower_description,
-          fruit_description: specimenCheck.data.fruit_description,
-          leaf_description: specimenCheck.data.leaf_description,
-          notes: specimenCheck.data.notes,
+          accesssion_no: values.accesssion_no,
+          date_collected: new Date(values.date_collected),
+          habitat: values.habitat,
+          habit: values.habit,
+          altitude_masl: parseNumber(values.altitude_masl),
+          plant_height_m: parseNumber(values.plant_height_m),
+          dbh_cm: parseNullableNumber(values.dbh_cm),
+          flower_description: values.flower_description || undefined,
+          fruit_description: values.fruit_description || undefined,
+          leaf_description: values.leaf_description || undefined,
+          notes: values.notes,
         },
       }, { mode, performedBy: currentUser?.email ?? "unknown" });
 
       if (imageFile) {
-        await uploadSpecimenImage(specimenCheck.data.accesssion_no, imageFile);
+        await uploadSpecimenImage(values.accesssion_no, imageFile);
       }
 
-      const collectorNames = collectorPayload.map((collector) => collector.name).join(", ");
+      const collectorNames = collectorPayload.map((c) => c.name).join(", ");
 
       setSuccessSummary({
-        accessionNo: specimenCheck.data.accesssion_no,
-        scientificName: speciesCheck.data.scientific_name,
+        accessionNo: values.accesssion_no,
+        scientificName: values.scientific_name,
         collectors: collectorNames,
       });
       setSubmitMessage("");
@@ -677,6 +531,8 @@ export function MultiForm({
                 nativityOptions={nativityOptions}
                 onFieldChange={setField}
                 isAccessionReadOnly={isAccessionReadOnly}
+                requiredFields={herbariumConfig?.requiredFields ?? []}
+                accessionPattern={herbariumConfig?.accessionPattern}
               />
             )}
 
@@ -685,6 +541,7 @@ export function MultiForm({
                 values={values}
                 errors={errors}
                 onFieldChange={setField}
+                requiredFields={herbariumConfig?.requiredFields ?? []}
               />
             )}
 
@@ -696,6 +553,7 @@ export function MultiForm({
                 onCollectorNameChange={handleCollectorNameChange}
                 onAddCollector={handleAddCollector}
                 onRemoveCollector={handleRemoveCollector}
+                requiredFields={herbariumConfig?.requiredFields ?? []}
               />
             )}
 
@@ -704,6 +562,7 @@ export function MultiForm({
                 values={values}
                 errors={errors}
                 onFieldChange={setField}
+                requiredFields={herbariumConfig?.requiredFields ?? []}
               />
             )}
 

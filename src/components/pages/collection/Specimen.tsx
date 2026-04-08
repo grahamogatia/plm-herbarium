@@ -5,9 +5,11 @@ import {
   getLocationByLocationId,
   type CollectionRow,
 } from "@/api/collection";
+import { getHerbariumConfig, type HerbariumConfig } from "@/api/config";
 import { useQuery } from "@tanstack/react-query";
 import Locality from "@/components/pages/collection/Locality";
 import Summary from "@/components/pages/collection/Summary";
+import SpecimenDetails from "@/components/pages/collection/SpecimenDetails";
 import TaxonClassification from "@/components/pages/collection/TaxonClassification";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TypographyH2 } from "@/components/ui/typography/typographyH2";
@@ -84,6 +86,14 @@ function CollectionDetails() {
   const collectors = data?.collectors ?? [];
   const specimenLocation = data?.specimenLocation ?? null;
 
+  const { data: herbariumConfig } = useQuery<HerbariumConfig>({
+    queryKey: ["herbarium-config"],
+    queryFn: getHerbariumConfig,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const visibleFields = herbariumConfig?.summaryFields;
+
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const isPanning = useRef(false);
@@ -146,7 +156,7 @@ function CollectionDetails() {
       <div className="p-4 flex-1 min-h-0">
         <div className="flex flex-col lg:flex-row w-full h-full gap-4">
           {/* Image viewer */}
-          <div className="w-full lg:basis-[70%] shrink-0 min-w-0 relative h-[50vh] lg:h-auto">
+          <div className="w-full lg:basis-[70%] shrink-0 min-w-0 relative h-[50vh] lg:h-[calc(100dvh-56px-2rem-2rem)]">
             <div
               className="relative flex w-full h-full items-center justify-center overflow-hidden rounded-md border border-zinc-950 bg-zinc-950"
               onWheel={handleWheel}
@@ -218,6 +228,7 @@ function CollectionDetails() {
                   <TabsTrigger value="summary">Summary</TabsTrigger>
                   <TabsTrigger value="taxon">Taxon</TabsTrigger>
                   <TabsTrigger value="locality">Locality</TabsTrigger>
+                  <TabsTrigger value="details">Details</TabsTrigger>
                 </TabsList>
                 <div className="p-2">
                   <TabsContent value="summary">
@@ -227,16 +238,21 @@ function CollectionDetails() {
                       specimenLocation={specimenLocation}
                       specimen={specimen}
                       formattedDateCollected={formattedDateCollected}
+                      visibleFields={visibleFields}
                     />
                   </TabsContent>
                   <TabsContent value="taxon">
-                    <TaxonClassification species={species} />
+                    <TaxonClassification species={species} visibleFields={visibleFields} />
                   </TabsContent>
                   <TabsContent value="locality">
                     <Locality
                       specimenLocation={specimenLocation}
                       specimen={specimen}
+                      visibleFields={visibleFields}
                     />
+                  </TabsContent>
+                  <TabsContent value="details">
+                    <SpecimenDetails specimen={specimen} visibleFields={visibleFields} />
                   </TabsContent>
                 </div>
               </Tabs>
