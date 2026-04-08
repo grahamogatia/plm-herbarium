@@ -2,7 +2,7 @@ import type { CollectionRow } from "@/api/collection";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
-import { ImageOff } from "lucide-react";
+import { ImageOff, Rows2, Rows3, Rows4 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -15,9 +15,14 @@ type GalleryViewProps = {
 // A4 portrait ratio (width:height = 1:1.414)
 const A4_RATIO = 1.414;
 const CARD_GAP = 20;
-const INFO_HEIGHT = 90;
-const MAX_ROWS = 2;
 const PAGINATION_HEIGHT = 36;
+const ROW_OPTIONS = [1, 2, 4] as const;
+type RowCount = (typeof ROW_OPTIONS)[number];
+
+function getInfoHeight(rowCount: RowCount): number {
+  if (rowCount >= 2) return 0;
+  return 90;
+}
 
 function GalleryImage({ src, alt }: { src: string; alt: string }) {
   const [loaded, setLoaded] = useState(false);
@@ -44,30 +49,23 @@ function GalleryView({ isLoading, errorMessage, rows }: GalleryViewProps) {
   const [itemsPerPage, setItemsPerPage] = useState(0);
   const [cardWidth, setCardWidth] = useState(220);
   const [page, setPage] = useState(1);
+  const [rowCount, setRowCount] = useState<RowCount>(2);
 
   const measure = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
     const availableWidth = el.clientWidth;
     const availableHeight = el.clientHeight - PAGINATION_HEIGHT;
+    const infoH = getInfoHeight(rowCount);
 
-    // Start with a generous card width and shrink until 2 rows fit
-    let w = 800;
-    let cols = Math.max(1, Math.floor((availableWidth + CARD_GAP) / (w + CARD_GAP)));
-    let cardH = Math.round(w * A4_RATIO) + INFO_HEIGHT;
-    let rowsFit = Math.floor((availableHeight + CARD_GAP) / (cardH + CARD_GAP));
+    // Derive card height from available height divided by the desired row count
+    const maxCardH = Math.floor((availableHeight - (rowCount - 1) * CARD_GAP) / rowCount);
+    const w = Math.max(100, Math.floor((maxCardH - infoH) / A4_RATIO));
+    const cols = Math.max(1, Math.floor((availableWidth + CARD_GAP) / (w + CARD_GAP)));
 
-    while (rowsFit < MAX_ROWS && w > 140) {
-      w -= 10;
-      cols = Math.max(1, Math.floor((availableWidth + CARD_GAP) / (w + CARD_GAP)));
-      cardH = Math.round(w * A4_RATIO) + INFO_HEIGHT;
-      rowsFit = Math.floor((availableHeight + CARD_GAP) / (cardH + CARD_GAP));
-    }
-
-    rowsFit = Math.min(rowsFit, MAX_ROWS);
     setCardWidth(w);
-    setItemsPerPage(cols * rowsFit);
-  }, []);
+    setItemsPerPage(cols * rowCount);
+  }, [rowCount]);
 
   useEffect(() => {
     measure();
@@ -121,7 +119,7 @@ function GalleryView({ isLoading, errorMessage, rows }: GalleryViewProps) {
               <Card
                 key={row.specimenId}
                 className="overflow-hidden p-0 gap-0 cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1.5 shrink-0"
-                style={{ width: cardWidth, height: Math.round(cardWidth * A4_RATIO) + INFO_HEIGHT }}
+                style={{ width: cardWidth, height: Math.round(cardWidth * A4_RATIO) + getInfoHeight(rowCount) }}
                 role="button"
                 tabIndex={0}
                 onClick={() =>
@@ -145,6 +143,17 @@ function GalleryView({ isLoading, errorMessage, rows }: GalleryViewProps) {
                   <Badge className="absolute top-2 right-2 z-10 rounded-md bg-white/40 backdrop-blur-sm text-zinc-900 text-[10px] font-mono border-none shadow-sm">
                     {row.accessionNo}
                   </Badge>
+                  {rowCount === 4 && (
+                    <div className="absolute bottom-0 left-0 right-0 z-10 bg-linear-to-t from-black/60 to-transparent px-2 pb-1.5 pt-4">
+                      <p className="text-[10px] font-semibold italic text-white truncate">{row.taxon}</p>
+                    </div>
+                  )}
+                  {rowCount === 2 && (
+                    <div className="absolute bottom-0 left-0 right-0 z-10 bg-linear-to-t from-black/60 to-transparent px-2.5 pb-2 pt-6">
+                      <p className="text-xs font-semibold italic text-white truncate">{row.taxon}</p>
+                      <p className="text-[10px] font-medium text-white/80 truncate">{row.family}</p>
+                    </div>
+                  )}
                   {row.photoUrl ? (
                     <GalleryImage src={row.photoUrl} alt={row.taxon} />
                   ) : (
@@ -154,38 +163,62 @@ function GalleryView({ isLoading, errorMessage, rows }: GalleryViewProps) {
                     </div>
                   )}
                 </div>
-                <div className="p-3 space-y-0.5 overflow-hidden" style={{ height: INFO_HEIGHT }}>
-                  <p className="text-sm font-semibold italic truncate">{row.taxon}</p>
-                  <p className="text-sm font-medium text-lime-700 truncate">{row.family}</p>
-                  <p className="text-xs text-zinc-600 truncate">{row.collector}</p>
-                </div>
+                {rowCount === 1 && (
+                  <div className="p-3 space-y-0.5 overflow-hidden" style={{ height: getInfoHeight(rowCount) }}>
+                    <p className="text-sm font-semibold italic truncate">{row.taxon}</p>
+                    <p className="text-sm font-medium text-lime-700 truncate">{row.family}</p>
+                    <p className="text-xs text-zinc-600 truncate">{row.collector}</p>
+                  </div>
+                )}
               </Card>
             ))}
           </div>
 
-          {totalPages > 1 && (
-            <div className="shrink-0 flex items-center justify-end gap-3 pt-2">
-              <span className="text-xs text-zinc-500">
-                Page {safePage} of {totalPages}
-              </span>
-              <div className="flex gap-1">
-                <button
-                  className="px-2 py-1 text-xs rounded border border-zinc-200 hover:bg-zinc-50 disabled:opacity-40"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={safePage <= 1}
-                >
-                  Previous
-                </button>
-                <button
-                  className="px-2 py-1 text-xs rounded border border-zinc-200 hover:bg-zinc-50 disabled:opacity-40"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={safePage >= totalPages}
-                >
-                  Next
-                </button>
-              </div>
+          <div className="shrink-0 flex items-center justify-between pt-2">
+            <div className="flex items-center gap-1">
+              {ROW_OPTIONS.map((opt) => {
+                const Icon = opt === 1 ? Rows2 : opt === 2 ? Rows3 : Rows4;
+                return (
+                  <button
+                    key={opt}
+                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded border transition-colors ${
+                      rowCount === opt
+                        ? "border-zinc-400 bg-zinc-100 text-zinc-900 font-medium"
+                        : "border-zinc-200 text-zinc-500 hover:bg-zinc-50"
+                    }`}
+                    onClick={() => { setRowCount(opt); setPage(1); }}
+                  >
+                    <Icon className="size-3.5" />
+                    {opt}
+                  </button>
+                );
+              })}
             </div>
-          )}
+
+            {totalPages > 1 && (
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-zinc-500">
+                  Page {safePage} of {totalPages}
+                </span>
+                <div className="flex gap-1">
+                  <button
+                    className="px-2 py-1 text-xs rounded border border-zinc-200 hover:bg-zinc-50 disabled:opacity-40"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={safePage <= 1}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    className="px-2 py-1 text-xs rounded border border-zinc-200 hover:bg-zinc-50 disabled:opacity-40"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safePage >= totalPages}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>
