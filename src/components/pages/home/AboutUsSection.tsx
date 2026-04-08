@@ -35,7 +35,7 @@ function AboutUsSection() {
           </div>
           <div>
             <TypographyH4>
-              <p className="text-zinc-950 text-sm">
+              <p className="text-zinc-700 text-base leading-relaxed">
                 The PLM Botanical Herbarium is the official herbarium of
                 Pamantasan ng Lungsod ng Maynila - the first city university herbarium in
                 Manila. Established to preserve plant and fungal specimens from student
@@ -51,7 +51,7 @@ function AboutUsSection() {
           </div>
           <div>
             <TypographyH4>
-              <p className="text-zinc-950 text-sm">
+              <p className="text-zinc-700 text-base leading-relaxed">
               We'd love to hear from you! Whether you have questions about
               our collection, suggestions to improve the system, or feedback about
               your experience using the PLM Botanical Herbarium Collection, our team

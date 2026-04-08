@@ -10,17 +10,18 @@ function HeroSection() {
   return (
     <FullScreen
       title="Welcome"
-      className="flex-col items-center justify-center"
+      className="relative flex-col items-center justify-center"
       background={sanggumay}
     >
-      <div className="flex flex-col items-center text-center gap-4 sm:gap-6 px-4 sm:px-10 lg:px-20 max-w-4xl mx-auto">
+      <div className="absolute inset-0 bg-black/60" />
+      <div className="relative z-10 flex flex-col items-center text-center gap-5 sm:gap-7 px-4 sm:px-10 lg:px-20 max-w-4xl mx-auto">
         <TypographyH1>
-          <p className="text-zinc-50 [text-shadow:0_4px_20px_rgba(0,0,0,0.9)] backdrop-blur-xs">
+          <p className="text-white drop-shadow-lg">
             Pioneering Manila's City University Herbarium
           </p>
         </TypographyH1>
         <TypographyH4>
-          <p className="text-zinc-50 [text-shadow:0_4px_20px_rgba(0,0,0,0.9)] backdrop-blur-xs text-sm sm:text-base lg:text-lg">
+          <p className="text-zinc-200 text-base sm:text-lg lg:text-xl leading-relaxed">
             The PLM Botanical Herbarium is a university-based herbarium located at Pamantasan ng Lungsod ng Maynila, Intramuros, Philippines, dedicated to preserving plant and fungal specimens primarily gathered from undergraduate research projects and course requirements since 1983.
           </p>
         </TypographyH4>
