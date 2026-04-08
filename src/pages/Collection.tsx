@@ -8,8 +8,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AddSpecimen from "@/components/pages/collection/AddSpecimen";
 import BatchUpload from "@/components/pages/collection/BatchUpload";
-import { Check, AlertTriangle } from "lucide-react";
+import { Check, AlertTriangle, Rows2, Rows3, Rows4 } from "lucide-react";
 import { ButtonGroup } from "@/components/ui/button-group";
+
+const ROW_OPTIONS = [1, 2, 4] as const;
+type RowCount = (typeof ROW_OPTIONS)[number];
 
 const COLLECTION_ROWS_STORAGE_KEY = "collectionRowsCache";
 
@@ -57,6 +60,7 @@ function Collection() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFamilies, setSelectedFamilies] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"table" | "gallery">("table");
+  const [rowCount, setRowCount] = useState<RowCount>(2);
   const [deleteToastAccessionNo, setDeleteToastAccessionNo] = useState<
     string | null
   >(null);
@@ -188,6 +192,7 @@ function Collection() {
           </ButtonGroup>
         </div>
       </div>
+      <div className="flex items-center justify-between pr-4">
       <Tabs
         value={viewMode}
         onValueChange={(value) => setViewMode(value as "table" | "gallery")}
@@ -198,6 +203,28 @@ function Collection() {
           <TabsTrigger value="gallery">Gallery</TabsTrigger>
         </TabsList>
       </Tabs>
+      {viewMode === "gallery" && (
+        <div className="flex items-center gap-1">
+          {ROW_OPTIONS.map((opt) => {
+            const Icon = opt === 1 ? Rows2 : opt === 2 ? Rows3 : Rows4;
+            return (
+              <button
+                key={opt}
+                className={`flex items-center gap-1 px-2 py-1 text-xs rounded border transition-colors ${
+                  rowCount === opt
+                    ? "border-zinc-400 bg-zinc-100 text-zinc-900 font-medium"
+                    : "border-zinc-200 text-zinc-500 hover:bg-zinc-50"
+                }`}
+                onClick={() => setRowCount(opt)}
+              >
+                <Icon className="size-3.5" />
+                {opt}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      </div>
       {viewMode === "table" ? (
         <TableView
           isLoading={isLoading}
@@ -213,6 +240,7 @@ function Collection() {
           isLoading={isLoading}
           errorMessage={errorMessage}
           rows={galleryRows}
+          rowCount={rowCount}
         />
       )}
 

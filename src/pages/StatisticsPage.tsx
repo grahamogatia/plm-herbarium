@@ -21,8 +21,10 @@ import {
   LineChart,
   Pie,
   PieChart,
-  RadialBar,
-  RadialBarChart,
+  PolarAngleAxis,
+  PolarGrid,
+  Radar,
+  RadarChart,
   XAxis,
   YAxis,
 } from "recharts";
@@ -157,7 +159,11 @@ function StatisticsPage() {
     count: { label: "Specimens", color: "#4d7c0f" },
   };
 
-  const totalNativity = stats.nativity.reduce((s, e) => s + e.count, 0);
+  // Nativity radar data
+  const nativityRadarData = stats.nativity.map((e) => ({
+    name: e.name,
+    count: e.count,
+  }));
 
   return (
     <>
@@ -261,43 +267,25 @@ function StatisticsPage() {
           </CardContent>
         </Card>
 
-        {/* Nativity — Radial */}
+        {/* Nativity — Radar */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold text-zinc-700">Nativity</CardTitle>
           </CardHeader>
           <CardContent>
             <ChartContainer config={nativityConfig} className="mx-auto aspect-square max-h-70">
-              <RadialBarChart
-                data={stats.nativity.map((e) => ({
-                  ...e,
-                  fill: NATIVITY_COLORS[e.name] ?? "#a1a1aa",
-                }))}
-                innerRadius={30}
-                outerRadius={110}
-              >
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent hideLabel nameKey="name" />}
+              <RadarChart data={nativityRadarData}>
+                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                <PolarAngleAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <PolarGrid />
+                <Radar
+                  dataKey="count"
+                  fill="#4d7c0f"
+                  fillOpacity={0.6}
+                  stroke="#4d7c0f"
+                  dot={{ r: 4, fillOpacity: 1 }}
                 />
-                <RadialBar dataKey="count" background />
-                <Label
-                  content={({ viewBox }) => {
-                    if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                      return (
-                        <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
-                          <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-2xl font-bold">
-                            {totalNativity}
-                          </tspan>
-                          <tspan x={viewBox.cx} y={(viewBox.cy ?? 0) + 20} className="fill-muted-foreground text-xs">
-                            Total
-                          </tspan>
-                        </text>
-                      );
-                    }
-                  }}
-                />
-              </RadialBarChart>
+              </RadarChart>
             </ChartContainer>
 
           </CardContent>

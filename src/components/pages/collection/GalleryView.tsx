@@ -2,7 +2,7 @@ import type { CollectionRow } from "@/api/collection";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
-import { ImageOff, Rows2, Rows3, Rows4 } from "lucide-react";
+import { ImageOff } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -10,6 +10,7 @@ type GalleryViewProps = {
   isLoading: boolean;
   errorMessage: string | null;
   rows: CollectionRow[];
+  rowCount: RowCount;
 };
 
 // A4 portrait ratio (width:height = 1:1.414)
@@ -43,13 +44,12 @@ function GalleryImage({ src, alt }: { src: string; alt: string }) {
   );
 }
 
-function GalleryView({ isLoading, errorMessage, rows }: GalleryViewProps) {
+function GalleryView({ isLoading, errorMessage, rows, rowCount }: GalleryViewProps) {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const [itemsPerPage, setItemsPerPage] = useState(0);
   const [cardWidth, setCardWidth] = useState(220);
   const [page, setPage] = useState(1);
-  const [rowCount, setRowCount] = useState<RowCount>(2);
 
   const measure = useCallback(() => {
     const el = containerRef.current;
@@ -174,26 +174,7 @@ function GalleryView({ isLoading, errorMessage, rows }: GalleryViewProps) {
             ))}
           </div>
 
-          <div className="shrink-0 flex items-center justify-between pt-2">
-            <div className="flex items-center gap-1">
-              {ROW_OPTIONS.map((opt) => {
-                const Icon = opt === 1 ? Rows2 : opt === 2 ? Rows3 : Rows4;
-                return (
-                  <button
-                    key={opt}
-                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded border transition-colors ${
-                      rowCount === opt
-                        ? "border-zinc-400 bg-zinc-100 text-zinc-900 font-medium"
-                        : "border-zinc-200 text-zinc-500 hover:bg-zinc-50"
-                    }`}
-                    onClick={() => { setRowCount(opt); setPage(1); }}
-                  >
-                    <Icon className="size-3.5" />
-                    {opt}
-                  </button>
-                );
-              })}
-            </div>
+          <div className="shrink-0 flex items-center justify-end pt-2">
 
             {totalPages > 1 && (
               <div className="flex items-center gap-3">

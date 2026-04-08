@@ -50,7 +50,7 @@ function Header() {
         </div>
 
         {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-4">
+        <div className={`hidden md:flex items-center gap-4 ${!currentUser ? "flex-1 justify-center" : ""}`}>
           <nav className="flex items-center gap-6 text-sm font-medium">
             <button className={navButtonClass(isHomePage)} onClick={() => navigate("/home")}>
               Home
