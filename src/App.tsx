@@ -1,19 +1,22 @@
 import "./App.css";
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 import AdminRoute from "./components/layout/AdminRoute";
-import Home from "./pages/Home";
-import Collection from "./pages/Collection";
-import CollectionDetails from "./components/pages/collection/Specimen.tsx";
-import AddSpecimenPage from "./pages/AddSpecimenPage.tsx";
-import UpdateSpecimenPage from "./pages/UpdateSpecimenPage.tsx";
-import BatchUploadPage from "./pages/BatchUploadPage.tsx";
-import UploadImagePage from "./pages/UploadImagePage.tsx";
-import LoginPage from "./pages/LoginPage.tsx";
-import AdminPage from "./pages/AdminPage.tsx";
-import StatisticsPage from "./pages/StatisticsPage.tsx";
+import { Spinner } from "./components/ui/spinner";
+
+const Home = lazy(() => import("./pages/Home"));
+const Collection = lazy(() => import("./pages/Collection"));
+const CollectionDetails = lazy(() => import("./components/pages/collection/Specimen"));
+const AddSpecimenPage = lazy(() => import("./pages/AddSpecimenPage"));
+const UpdateSpecimenPage = lazy(() => import("./pages/UpdateSpecimenPage"));
+const BatchUploadPage = lazy(() => import("./pages/BatchUploadPage"));
+const UploadImagePage = lazy(() => import("./pages/UploadImagePage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const AdminPage = lazy(() => import("./pages/AdminPage"));
+const StatisticsPage = lazy(() => import("./pages/StatisticsPage"));
 
 function AppLayout() {
   return (
@@ -29,6 +32,13 @@ function AppLayout() {
 
 function App() {
   return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-dvh">
+          <Spinner className="size-8 text-lime-700" />
+        </div>
+      }
+    >
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route element={<AppLayout />}>
@@ -51,6 +61,7 @@ function App() {
         </Route>
       </Route>
     </Routes>
+    </Suspense>
   );
 }
 
