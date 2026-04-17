@@ -1,4 +1,5 @@
-import { Leaf, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import logo from "@/assets/logo.jpg";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -45,7 +46,7 @@ function Header() {
       <div className="flex h-14 items-center justify-between px-4 sm:px-6">
         {/* Logo */}
         <div className="flex items-center gap-2 cursor-pointer shrink-0" onClick={() => navigate("/home")}>
-          <Leaf className="h-5 w-5 text-lime-700" />
+          <img src={logo} alt="PLM Herbarium Logo" className="h-9 w-9 rounded-sm object-cover" />
           <span className="text-base sm:text-lg font-semibold truncate">PLM Botanical Herbarium</span>
         </div>
 

@@ -1,5 +1,6 @@
-import { Leaf, Mail, MapPin, Phone } from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import logo from "@/assets/logo.jpg";
 
 function Footer() {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ function Footer() {
           {/* Brand */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <Leaf className="h-5 w-5 text-lime-500" />
+              <img src={logo} alt="PLM Herbarium Logo" className="h-9 w-9 rounded-sm object-cover" />
               <span className="text-lg font-semibold text-zinc-50">
                 PLM Botanical Herbarium
               </span>
