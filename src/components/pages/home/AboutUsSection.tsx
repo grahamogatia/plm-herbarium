@@ -6,18 +6,23 @@ import { TypographyH1 } from "@/components/ui/typography/typographyH1";
 import { TypographyH2 } from "@/components/ui/typography/typographyH2";
 import { TypographyH4 } from "@/components/ui/typography/typographyH4";
 import { useState } from "react";
+import { submitFeedback } from "@/api/feedback";
 import plmBldg from "@/assets/plm-bldg.png";
-
 
 function AboutUsSection() {
   const [feedback, setFeedback] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <FullScreen title="Pamantasan ng Lungsod ng Maynila" className="bg-zinc-50">
       <div className="flex flex-col lg:flex-row w-full">
         <div className="flex flex-col gap-5 px-4 sm:px-10 lg:px-20 py-8 flex-1">
           <TypographyH1>
-            <p className="text-zinc-950 italic">Pamantasan ng Lungsod ng Maynila</p>
+            <p className="text-zinc-950 italic">
+              Pamantasan ng Lungsod ng Maynila
+            </p>
           </TypographyH1>
           <Card className="h-48 sm:h-64 lg:h-90 overflow-hidden p-0 bg-zinc-50">
             <img
@@ -37,10 +42,11 @@ function AboutUsSection() {
             <TypographyH4>
               <p className="text-zinc-700 text-base leading-relaxed">
                 The PLM Botanical Herbarium is the official herbarium of
-                Pamantasan ng Lungsod ng Maynila - the first city university herbarium in
-                Manila. Established to preserve plant and fungal specimens from student
-                and faculty research, it serves as a vital for education, biodiversity
-                studies, and local conservation efforts.
+                Pamantasan ng Lungsod ng Maynila - the first city university
+                herbarium in Manila. Established to preserve plant and fungal
+                specimens from student and faculty research, it serves as a
+                vital for education, biodiversity studies, and local
+                conservation efforts.
               </p>
             </TypographyH4>
           </div>
@@ -52,10 +58,10 @@ function AboutUsSection() {
           <div>
             <TypographyH4>
               <p className="text-zinc-700 text-base leading-relaxed">
-              We'd love to hear from you! Whether you have questions about
-              our collection, suggestions to improve the system, or feedback about
-              your experience using the PLM Botanical Herbarium Collection, our team
-              is here to help.
+                We'd love to hear from you! Whether you have questions about our
+                collection, suggestions to improve the system, or feedback about
+                your experience using the PLM Botanical Herbarium Collection,
+                our team is here to help.
               </p>
             </TypographyH4>
           </div>
@@ -68,10 +74,30 @@ function AboutUsSection() {
             />
             <Button
               className="bg-lime-600 text-white hover:bg-lime-700 w-fit disabled:opacity-50"
-              disabled={!feedback}
-          >
-            Submit Feedback
-          </Button>
+              disabled={!feedback || submitting}
+              onClick={async () => {
+                setSubmitting(true);
+                setError(null);
+                setSuccess(false);
+                try {
+                  await submitFeedback(feedback);
+                  setFeedback("");
+                  setSuccess(true);
+                } catch (e) {
+                  setError("Failed to submit feedback. Please try again.");
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+            >
+              {submitting ? "Submitting..." : "Submit Feedback"}
+            </Button>
+            {success && (
+              <p className="text-green-700 text-sm">Thank you for your feedback!</p>
+            )}
+            {error && (
+              <p className="text-red-600 text-sm">{error}</p>
+            )}
           </div>
         </div>
       </div>
