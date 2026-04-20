@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { CalendarDays, Check, ClipboardList, Plus, Settings, Shield, Trash2, UserPlus, Users, X } from "lucide-react";
+import { Archive, ArchiveRestore, CalendarDays, Check, ClipboardList, MessageSquare, Plus, Settings, Shield, Tag, Trash2, UserPlus, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,11 +26,17 @@ import {
   type TableAttribute,
   type SummaryField,
 } from "@/api/config";
+import {
+  getFeedback,
+  updateFeedbackTags,
+  setFeedbackArchived,
+  type FeedbackEntry,
+} from "@/api/feedback";
 
 function AdminPage() {
   const { currentUser } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<"users" | "logs" | "config">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "logs" | "config" | "feedback">("users");
 
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -64,6 +70,14 @@ function AdminPage() {
   const [savingConfig, setSavingConfig] = useState(false);
   const [configSaved, setConfigSaved] = useState(false);
 
+  // Feedback state
+  const [feedbackList, setFeedbackList] = useState<FeedbackEntry[]>([]);
+  const [loadingFeedback, setLoadingFeedback] = useState(false);
+  const [feedbackPage, setFeedbackPage] = useState(1);
+  const [showArchived, setShowArchived] = useState(false);
+  const [tagInput, setTagInput] = useState<{ id: string; value: string } | null>(null);
+  const tagInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     void fetchUsers();
   }, []);
@@ -74,6 +88,9 @@ function AdminPage() {
     }
     if (activeTab === "config") {
       void fetchConfig();
+    }
+    if (activeTab === "feedback") {
+      void fetchFeedbackList();
     }
   }, [activeTab]);
 
@@ -174,6 +191,48 @@ function AdminPage() {
     }
   }
 
+  async function fetchFeedbackList() {
+    setLoadingFeedback(true);
+    try {
+      const data = await getFeedback();
+      setFeedbackList(data);
+    } finally {
+      setLoadingFeedback(false);
+    }
+  }
+
+  async function handleAddTag(id: string, tag: string) {
+    const trimmed = tag.trim().toLowerCase();
+    if (!trimmed) return;
+    const entry = feedbackList.find((f) => f.id === id);
+    if (!entry || entry.tags.includes(trimmed)) return;
+    const newTags = [...entry.tags, trimmed];
+    await updateFeedbackTags(id, newTags);
+    setFeedbackList((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, tags: newTags } : f)),
+    );
+  }
+
+  async function handleRemoveTag(id: string, tag: string) {
+    const entry = feedbackList.find((f) => f.id === id);
+    if (!entry) return;
+    const newTags = entry.tags.filter((t) => t !== tag);
+    await updateFeedbackTags(id, newTags);
+    setFeedbackList((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, tags: newTags } : f)),
+    );
+  }
+
+  async function handleToggleArchive(id: string) {
+    const entry = feedbackList.find((f) => f.id === id);
+    if (!entry) return;
+    const newArchived = !entry.archived;
+    await setFeedbackArchived(id, newArchived);
+    setFeedbackList((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, archived: newArchived } : f)),
+    );
+  }
+
   async function handleSaveConfig() {
     if (!config) return;
     setSavingConfig(true);
@@ -263,6 +322,17 @@ function AdminPage() {
           >
             <Settings className="size-4" />
             Configurations
+          </button>
+          <button
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "feedback"
+                ? "border-lime-600 text-zinc-900"
+                : "border-transparent text-zinc-500 hover:text-zinc-800"
+            }`}
+            onClick={() => setActiveTab("feedback")}
+          >
+            <MessageSquare className="size-4" />
+            Feedback
           </button>
         </div>
       </div>
@@ -789,6 +859,190 @@ function AdminPage() {
               </section>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Feedback tab */}
+      {activeTab === "feedback" && (
+        <div className="p-4 md:p-6 max-w-5xl">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-zinc-800">User Feedback</h2>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setShowArchived((v) => !v); setFeedbackPage(1); }}
+                className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  showArchived
+                    ? "border-zinc-300 bg-zinc-100 text-zinc-700"
+                    : "border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50"
+                }`}
+              >
+                <Archive className="size-3" />
+                {showArchived ? "Showing Archived" : "Show Archived"}
+              </button>
+              <Button size="sm" variant="outline" onClick={() => void fetchFeedbackList()} disabled={loadingFeedback}>
+                {loadingFeedback ? "Refreshing..." : "Refresh"}
+              </Button>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-zinc-200 bg-white overflow-hidden">
+            {loadingFeedback ? (
+              <div className="p-6 text-sm text-zinc-500">Loading feedback...</div>
+            ) : (() => {
+              const PAGE_SIZE = 10;
+              const filtered = feedbackList.filter((f) =>
+                showArchived ? f.archived : !f.archived,
+              );
+              if (filtered.length === 0) {
+                return (
+                  <div className="p-6 text-sm text-zinc-500">
+                    {showArchived ? "No archived feedback." : "No feedback received yet."}
+                  </div>
+                );
+              }
+              const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+              const safePage = Math.min(feedbackPage, totalPages);
+              const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+              return (
+                <>
+                  <div className="divide-y divide-zinc-100">
+                    {pageItems.map((entry) => (
+                      <div key={entry.id} className={`px-4 py-4 ${entry.archived ? "bg-zinc-50/50" : ""}`}>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-zinc-800 whitespace-pre-wrap wrap-break-word">
+                              {entry.feedback}
+                            </p>
+                            <div className="flex items-center gap-2 mt-2 flex-wrap">
+                              {entry.tags.map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="inline-flex items-center gap-1 rounded-full bg-sky-100 text-sky-800 px-2.5 py-0.5 text-xs font-medium"
+                                >
+                                  {tag}
+                                  <button
+                                    onClick={() => void handleRemoveTag(entry.id, tag)}
+                                    className="hover:text-sky-950"
+                                  >
+                                    <X className="size-3" />
+                                  </button>
+                                </span>
+                              ))}
+                              {tagInput?.id === entry.id ? (
+                                <form
+                                  onSubmit={(e) => {
+                                    e.preventDefault();
+                                    void handleAddTag(entry.id, tagInput.value).then(() =>
+                                      setTagInput(null),
+                                    );
+                                  }}
+                                  className="inline-flex"
+                                >
+                                  <input
+                                    ref={tagInputRef}
+                                    autoFocus
+                                    value={tagInput.value}
+                                    onChange={(e) =>
+                                      setTagInput({ id: entry.id, value: e.target.value })
+                                    }
+                                    onBlur={() => {
+                                      if (tagInput.value.trim()) {
+                                        void handleAddTag(entry.id, tagInput.value);
+                                      }
+                                      setTagInput(null);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Escape") setTagInput(null);
+                                    }}
+                                    placeholder="tag name"
+                                    className="w-20 rounded-full border border-zinc-300 bg-white px-2.5 py-0.5 text-xs outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-200"
+                                  />
+                                </form>
+                              ) : (
+                                <button
+                                  onClick={() => setTagInput({ id: entry.id, value: "" })}
+                                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-zinc-300 px-2 py-0.5 text-xs text-zinc-400 hover:border-zinc-400 hover:text-zinc-600"
+                                >
+                                  <Tag className="size-3" />
+                                  Add tag
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-2 shrink-0">
+                            <span className="text-xs text-zinc-400 font-mono whitespace-nowrap">
+                              {entry.createdAt?.toDate().toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                            </span>
+                            <button
+                              onClick={() => void handleToggleArchive(entry.id)}
+                              className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                                entry.archived
+                                  ? "text-lime-700 hover:bg-lime-50"
+                                  : "text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
+                              }`}
+                              title={entry.archived ? "Unarchive" : "Archive"}
+                            >
+                              {entry.archived ? (
+                                <>
+                                  <ArchiveRestore className="size-3.5" />
+                                  Unarchive
+                                </>
+                              ) : (
+                                <>
+                                  <Archive className="size-3.5" />
+                                  Archive
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between border-t border-zinc-100 px-4 py-3">
+                      <span className="text-xs text-zinc-400">
+                        Showing {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setFeedbackPage((p) => Math.max(1, p - 1))}
+                          disabled={safePage === 1}
+                          className="rounded px-2.5 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          ← Prev
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                          <button
+                            key={n}
+                            onClick={() => setFeedbackPage(n)}
+                            className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+                              n === safePage
+                                ? "bg-zinc-900 text-white"
+                                : "text-zinc-600 hover:bg-zinc-100"
+                            }`}
+                          >
+                            {n}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => setFeedbackPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={safePage === totalPages}
+                          className="rounded px-2.5 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          Next →
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
         </div>
       )}
 
