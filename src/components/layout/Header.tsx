@@ -44,15 +44,16 @@ function Header() {
     <header className="sticky top-0 z-50 w-full bg-white border-b border-zinc-100">
       {/* Desktop & mobile top bar */}
       <div className="flex h-14 items-center justify-between px-4 sm:px-6">
-        {/* Logo */}
-        <div className="flex items-center gap-2 cursor-pointer shrink-0" onClick={() => navigate("/home")}>
-          <img src={logo} alt="PLM Herbarium Logo" className="h-9 w-9 rounded-sm object-cover" />
-          <span className="text-base sm:text-lg font-semibold truncate">PLM Botanical Herbarium</span>
-        </div>
+        {/* Logo + Desktop nav */}
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 cursor-pointer shrink-0" onClick={() => navigate("/home")}>
+            <img src={logo} alt="PLM Herbarium Logo" className="h-9 w-9 rounded-sm object-cover" />
+            <span className="text-base sm:text-lg font-semibold truncate">PLM Herbarium</span>
+          </div>
 
-        {/* Desktop nav */}
-        <div className={`hidden md:flex items-center gap-4 ${!currentUser ? "flex-1 justify-center" : ""}`}>
-          <nav className="flex items-center gap-6 text-sm font-medium">
+          <div className="hidden md:flex items-center gap-6">
+            <div className="h-5 w-px bg-zinc-300" />
+            <nav className="flex items-center gap-6 text-sm font-medium">
             <button className={navButtonClass(isHomePage)} onClick={() => navigate("/home")}>
               Home
             </button>
@@ -68,6 +69,7 @@ function Header() {
               </button>
             )}
           </nav>
+          </div>
         </div>
 
         {/* Desktop auth */}
