@@ -34,7 +34,7 @@ function LoginPage() {
         <div className="mb-8 flex flex-col items-center gap-2 text-center">
           <div className="flex items-center gap-2">
             <Leaf className="h-6 w-6 text-lime-700" />
-            <span className="text-lg font-semibold">PLM Botanical Herbarium</span>
+            <span className="text-lg font-semibold">PLM Herbarium</span>
           </div>
           <p className="text-sm text-zinc-500">Sign in to your account</p>
         </div>

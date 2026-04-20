@@ -14,7 +14,7 @@ function Footer() {
             <div className="flex items-center gap-2">
               <img src={logo} alt="PLM Herbarium Logo" className="h-9 w-9 rounded-sm object-cover" />
               <span className="text-lg font-semibold text-zinc-50">
-                PLM Botanical Herbarium
+                PLM Herbarium
               </span>
             </div>
             <p className="text-sm leading-relaxed text-zinc-400">
@@ -137,7 +137,7 @@ function Footer() {
         {/* Bottom bar */}
         <div className="mt-8 border-t border-zinc-800 pt-6 text-center text-xs text-zinc-500">
           <p>
-            &copy; {new Date().getFullYear()} PLM Botanical Herbarium. All
+            &copy; {new Date().getFullYear()} PLM Herbarium. All
             rights reserved.
           </p>
         </div>

@@ -24,7 +24,7 @@ function HeroSection() {
         </TypographyH1>
         <TypographyH4>
           <p className="text-zinc-200 text-base sm:text-lg lg:text-xl leading-relaxed">
-            The PLM Botanical Herbarium is a university-based herbarium located at Pamantasan ng Lungsod ng Maynila, Intramuros, Philippines, dedicated to preserving plant and fungal specimens primarily gathered from undergraduate research projects and course requirements since 1983.
+            The PLM Herbarium is a university-based herbarium located at Pamantasan ng Lungsod ng Maynila, Intramuros, Philippines, dedicated to preserving plant and fungal specimens primarily gathered from undergraduate research projects and course requirements since 1983.
           </p>
         </TypographyH4>
         <Button
