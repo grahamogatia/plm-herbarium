@@ -3,6 +3,7 @@ import {
   getSpeciesBySpeciesId,
   getCollectorsByCollectorIds,
   getLocationByLocationId,
+  getCollectionRows,
   type CollectionRow,
 } from "@/api/collection";
 import { getHerbariumConfig, type HerbariumConfig } from "@/api/config";
@@ -13,11 +14,19 @@ import SpecimenDetails from "@/components/pages/collection/SpecimenDetails";
 import TaxonClassification from "@/components/pages/collection/TaxonClassification";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TypographyH2 } from "@/components/ui/typography/typographyH2";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxEmpty,
+} from "@/components/ui/combobox";
 import type { Specimen, Species, Collector, Location } from "@/data/types";
-import { ImageOff, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { ImageOff, ZoomIn, ZoomOut, RotateCcw, Search } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
-import { useCallback, useMemo, useRef, useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 function SpecimenImageSpinner({ src }: { src: string }) {
   const [loaded, setLoaded] = useState(false);
@@ -36,6 +45,7 @@ function SpecimenImageSpinner({ src }: { src: string }) {
 function CollectionDetails() {
   const { accessionNo = "" } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const decodedAccessionNo = useMemo(
     () => decodeURIComponent(accessionNo),
@@ -45,6 +55,43 @@ function CollectionDetails() {
   const routeRow = (location.state as { row?: CollectionRow } | null)?.row;
   const taxonFromRoute =
     routeRow?.accessionNo === decodedAccessionNo ? routeRow.taxon : null;
+
+  // Prevent page-level zoom (browser zoom), keep specimen image zoom
+  useEffect(() => {
+    const blockZoomWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) e.preventDefault();
+    };
+    const blockZoomKeyboard = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === "+" || e.key === "-" || e.key === "=" || e.key === "0")) {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener("wheel", blockZoomWheel, { passive: false });
+    document.addEventListener("keydown", blockZoomKeyboard);
+    return () => {
+      document.removeEventListener("wheel", blockZoomWheel);
+      document.removeEventListener("keydown", blockZoomKeyboard);
+    };
+  }, []);
+
+  // Fetch all collection rows for taxon search
+  const { data: allRows } = useQuery<CollectionRow[]>({
+    queryKey: ["collection-rows"],
+    queryFn: getCollectionRows,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const [taxonSearch, setTaxonSearch] = useState("");
+
+  const taxonOptions = useMemo(() => {
+    if (!allRows) return [];
+    const query = taxonSearch.trim().toLowerCase();
+    // Deduplicate by accessionNo, group by taxon
+    const filtered = query
+      ? allRows.filter((r) => r.taxon.toLowerCase().includes(query))
+      : allRows;
+    return filtered.slice(0, 50);
+  }, [allRows, taxonSearch]);
 
   const { data } = useQuery<{
     specimen: Specimen | null;
@@ -149,8 +196,56 @@ function CollectionDetails() {
 
   return (
     <div className="flex flex-col min-h-[calc(100dvh-56px)]">
-      <div className="bg-zinc-900 p-4 w-full text-zinc-50 italic shrink-0">
-        <TypographyH2>{taxonFromRoute ?? "Specimen"}</TypographyH2>
+      <div className="bg-zinc-900 px-4 py-3 w-full text-zinc-50 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="italic shrink-0">
+            <TypographyH2>{taxonFromRoute ?? "Specimen"}</TypographyH2>
+          </div>
+          <div className="flex-1 sm:ml-auto">
+            <Combobox
+              value={null}
+              inputValue={taxonSearch}
+              onInputValueChange={setTaxonSearch}
+              onValueChange={(value) => {
+                if (!value) return;
+                const match = allRows?.find((r) => r.accessionNo === value);
+                if (match) {
+                  setTaxonSearch("");
+                  navigate(`/collections/${encodeURIComponent(match.accessionNo)}`, {
+                    state: { row: match },
+                  });
+                }
+              }}
+            >
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-zinc-400 pointer-events-none z-10" />
+                <ComboboxInput
+                  placeholder="Search taxons…"
+                  className="h-9 w-full rounded-md border border-zinc-700 bg-zinc-800 pl-8 pr-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-lime-600 focus:ring-1 focus:ring-lime-600"
+                />
+              </div>
+              <ComboboxContent className="max-h-64 overflow-y-auto">
+                <ComboboxList>
+                  <ComboboxEmpty className="px-3 py-2 text-sm text-zinc-400">
+                    No taxons found
+                  </ComboboxEmpty>
+                  {taxonOptions.map((row) => (
+                    <ComboboxItem
+                      key={row.accessionNo}
+                      value={row.accessionNo}
+                      className="text-sm italic"
+                    >
+                      <span>{row.taxon}</span>
+                      <span className="ml-auto text-xs text-zinc-400 not-italic">
+                        {row.accessionNo}
+                      </span>
+                    </ComboboxItem>
+                  ))}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+          </div>
+        </div>
       </div>
 
       <div className="p-4 flex-1 min-h-0">
