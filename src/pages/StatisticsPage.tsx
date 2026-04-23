@@ -126,77 +126,80 @@ function StatisticsPage() {
     if (!reportRef.current) return;
     setExporting(true);
     try {
-      // Temporarily force a fixed width for consistent PDF rendering
-      const el = reportRef.current;
-      const origWidth = el.style.width;
-      const origMaxWidth = el.style.maxWidth;
-      el.style.width = "900px";
-      el.style.maxWidth = "900px";
+      // Allow any in-flight React renders / chart animations to settle
+      await new Promise<void>((r) => setTimeout(r, 150));
 
-      const canvas = await html2canvas(el, {
+      // Capture via a clone so the visible layout is never mutated.
+      // onclone receives the cloned document element so we can set a stable
+      // fixed width without touching the live DOM at all.
+      const RENDER_WIDTH = 900;
+      const canvas = await html2canvas(reportRef.current, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: "#ffffff",
-        windowWidth: 960,
+        // windowWidth should match the fixed width we set on the clone so that
+        // media-queries and percentage widths compute correctly.
+        windowWidth: RENDER_WIDTH,
+        onclone: (_doc, clonedEl) => {
+          clonedEl.style.width = `${RENDER_WIDTH}px`;
+          clonedEl.style.maxWidth = `${RENDER_WIDTH}px`;
+          clonedEl.style.boxSizing = "border-box";
+          clonedEl.style.overflow = "visible";
+        },
       });
 
-      // Restore original styles
-      el.style.width = origWidth;
-      el.style.maxWidth = origMaxWidth;
-
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 12;
-      const usableWidth = pageWidth - margin * 2;
-      const usableHeight = pageHeight - margin * 2;
+      const pageWidth  = pdf.internal.pageSize.getWidth();   // 210 mm
+      const pageHeight = pdf.internal.pageSize.getHeight();  // 297 mm
+      const margin      = 12; // mm
+      const usableW     = pageWidth  - margin * 2;
+      const usableH     = pageHeight - margin * 2 - 6; // 6 mm reserved for footer
 
-      // Scale canvas to fit page width
-      const scaledHeight = (canvas.height * usableWidth) / canvas.width;
-      const totalPages = Math.ceil(scaledHeight / usableHeight);
+      // How many canvas pixels correspond to 1 mm on the PDF page?
+      const pxPerMm   = canvas.width / usableW;
+      // How many canvas pixels fit in a single PDF page (height)?
+      const pageHeightPx = usableH * pxPerMm;
+
+      const totalPages = Math.ceil(canvas.height / pageHeightPx);
 
       for (let page = 0; page < totalPages; page++) {
         if (page > 0) pdf.addPage();
 
-        // Source coordinates on the full canvas
-        const srcY = (page * usableHeight / scaledHeight) * canvas.height;
-        const srcH = Math.min(
-          (usableHeight / scaledHeight) * canvas.height,
-          canvas.height - srcY,
-        );
-        const destH = (srcH / canvas.height) * scaledHeight;
+        const srcY = page * pageHeightPx;
+        const srcH = Math.min(pageHeightPx, canvas.height - srcY);
+        // The destination height in mm, proportional to the slice height
+        const destH = srcH / pxPerMm;
 
-        // Create a slice canvas for this page
+        // Blit just this page's slice into a temporary canvas
         const slice = document.createElement("canvas");
-        slice.width = canvas.width;
-        slice.height = Math.round(srcH);
+        slice.width  = canvas.width;
+        slice.height = Math.ceil(srcH);
         const ctx = slice.getContext("2d");
         if (ctx) {
           ctx.fillStyle = "#ffffff";
           ctx.fillRect(0, 0, slice.width, slice.height);
           ctx.drawImage(
             canvas,
-            0, Math.round(srcY), canvas.width, Math.round(srcH),
-            0, 0, canvas.width, Math.round(srcH),
+            0, Math.floor(srcY), canvas.width, Math.ceil(srcH),
+            0, 0,                canvas.width, Math.ceil(srcH),
           );
         }
 
         pdf.addImage(
           slice.toDataURL("image/png"),
           "PNG",
-          margin,
-          margin,
-          usableWidth,
-          destH,
+          margin, margin,
+          usableW, destH,
         );
 
-        // Page footer
+        // Footer
         pdf.setFontSize(8);
-        pdf.setTextColor(160, 160, 160);
+        pdf.setTextColor(150, 150, 150);
         pdf.text(
-          `PLM Herbarium — Collection Statistics Report | Page ${page + 1} of ${totalPages}`,
+          `PLM Herbarium — Collection Statistics Report  |  Page ${page + 1} of ${totalPages}`,
           pageWidth / 2,
-          pageHeight - 6,
+          pageHeight - 4,
           { align: "center" },
         );
       }
