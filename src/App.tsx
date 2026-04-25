@@ -1,6 +1,7 @@
 import "./App.css";
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
@@ -32,36 +33,39 @@ function AppLayout() {
 
 function App() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center h-dvh">
-          <Spinner className="size-8 text-lime-700" />
-        </div>
-      }
-    >
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route element={<AppLayout />}>
-        {/* Public routes */}
-        <Route path="/" element={<Navigate to="/home" replace />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/statistics" element={<StatisticsPage />} />
-        <Route path="/collections" element={<Collection />} />
-        <Route path="/collections/:accessionNo" element={<CollectionDetails />} />
-        {/* Protected CRUD routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/collections/add-specimen" element={<AddSpecimenPage />} />
-          <Route path="/collections/update/:accessionNo" element={<UpdateSpecimenPage />} />
-          <Route path="/collections/upload-image/:accessionNo" element={<UploadImagePage />} />
-          <Route path="/collections/batch-upload" element={<BatchUploadPage />} />
+    <>
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center h-dvh">
+            <Spinner className="size-8 text-lime-700" />
+          </div>
+        }
+      >
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route element={<AppLayout />}>
+          {/* Public routes */}
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/statistics" element={<StatisticsPage />} />
+          <Route path="/collections" element={<Collection />} />
+          <Route path="/collections/:accessionNo" element={<CollectionDetails />} />
+          {/* Protected CRUD routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/collections/add-specimen" element={<AddSpecimenPage />} />
+            <Route path="/collections/update/:accessionNo" element={<UpdateSpecimenPage />} />
+            <Route path="/collections/upload-image/:accessionNo" element={<UploadImagePage />} />
+            <Route path="/collections/batch-upload" element={<BatchUploadPage />} />
+          </Route>
+          {/* Admin-only routes */}
+          <Route element={<AdminRoute />}>
+            <Route path="/admin" element={<AdminPage />} />
+          </Route>
         </Route>
-        {/* Admin-only routes */}
-        <Route element={<AdminRoute />}>
-          <Route path="/admin" element={<AdminPage />} />
-        </Route>
-      </Route>
-    </Routes>
-    </Suspense>
+      </Routes>
+      </Suspense>
+      <Analytics />
+    </>
   );
 }
 
