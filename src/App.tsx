@@ -1,6 +1,7 @@
 import "./App.css";
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
@@ -32,6 +33,7 @@ function AppLayout() {
 
 function App() {
   return (
+    <>
     <Suspense
       fallback={
         <div className="flex items-center justify-center h-dvh">
@@ -62,6 +64,8 @@ function App() {
       </Route>
     </Routes>
     </Suspense>
+    <Analytics />
+    </>
   );
 }
 
