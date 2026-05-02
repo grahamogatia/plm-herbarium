@@ -78,6 +78,10 @@ function AdminPage() {
   const [tagInput, setTagInput] = useState<{ id: string; value: string } | null>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
 
+  // Nativity management state
+  const [newNativityValue, setNewNativityValue] = useState("");
+  const nativityInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     void fetchUsers();
   }, []);
@@ -273,6 +277,24 @@ function AdminPage() {
       summaryFields: config.summaryFields.includes(field)
         ? config.summaryFields.filter((f) => f !== field)
         : [...config.summaryFields, field],
+    });
+  }
+
+  function addNativityOption(newValue: string) {
+    if (!config) return;
+    const trimmed = newValue.trim();
+    if (!trimmed || config.nativityOptions.includes(trimmed)) return;
+    setConfig({
+      ...config,
+      nativityOptions: [...config.nativityOptions, trimmed],
+    });
+  }
+
+  function removeNativityOption(value: string) {
+    if (!config) return;
+    setConfig({
+      ...config,
+      nativityOptions: config.nativityOptions.filter((n) => n !== value),
     });
   }
 
@@ -856,6 +878,60 @@ function AdminPage() {
                     </div>
                   );
                 })}
+              </section>
+
+              <hr className="border-zinc-200" />
+
+              {/* 5. Nativity Options */}
+              <section>
+                <h3 className="text-sm font-semibold text-zinc-800 mb-1">Nativity Values</h3>
+                <p className="text-xs text-zinc-500 mb-3">
+                  Manage the nativity classification options available for specimens.
+                </p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {config.nativityOptions.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => removeNativityOption(option)}
+                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-lime-100 text-lime-800 ring-1 ring-lime-300 hover:bg-lime-200 transition-colors"
+                    >
+                      {option}
+                      <X className="size-3 cursor-pointer" />
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <Input
+                      ref={nativityInputRef}
+                      type="text"
+                      value={newNativityValue}
+                      onChange={(e) => setNewNativityValue(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter") {
+                          addNativityOption(newNativityValue);
+                          setNewNativityValue("");
+                          nativityInputRef.current?.focus();
+                        }
+                      }}
+                      placeholder="Enter new nativity value..."
+                      className="max-w-xs h-10"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      addNativityOption(newNativityValue);
+                      setNewNativityValue("");
+                      nativityInputRef.current?.focus();
+                    }}
+                    className="gap-1"
+                  >
+                    <Plus className="size-3" />
+                    Add
+                  </Button>
+                </div>
               </section>
             </div>
           )}

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight, CloudUpload, FileSpreadsheet, X } from "lucide-react";
 import { z } from "zod";
@@ -12,6 +12,7 @@ import {
 import { TypographyH2 } from "@/components/ui/typography/typographyH2";
 import { saveSpecimenEntry } from "@/api/collection";
 import { SpeciesSchema, LocationSchema } from "@/data/schemas";
+import { getHerbariumConfig } from "@/api/config";
 import { useAuth } from "@/context/AuthContext";
 
 
@@ -141,7 +142,6 @@ function parseFile(file: File): Promise<ParsedCSV | { message: string }> {
 // ── CSV → SaveSpecimenInput mapping & validation ─────────────────────────────
 
 const CONSERVATION_OPTIONS = SpeciesSchema.shape.conservation_status.unwrap().options;
-const NATIVITY_OPTIONS = SpeciesSchema.shape.nativity.unwrap().options;
 
 type RowValidationResult =
   | { ok: true; input: Parameters<typeof saveSpecimenEntry>[0] }
@@ -150,6 +150,7 @@ type RowValidationResult =
 function csvRowToInput(
   headers: string[],
   row: string[],
+  nativityOptions: string[],
 ): RowValidationResult {
   const get = (col: string) => {
     const i = headers.indexOf(col);
@@ -176,10 +177,10 @@ function csvRowToInput(
       `Conservation Status "${raw_conservation}" is not valid. Must be one of: ${CONSERVATION_OPTIONS.join(", ")}.`,
     );
 
-  const nativity_result = z.enum(NATIVITY_OPTIONS).safeParse(raw_nativity);
+  const nativity_result = z.enum(nativityOptions as [string, ...string[]]).safeParse(raw_nativity);
   if (!nativity_result.success)
     errors.push(
-      `Nativity "${raw_nativity}" is not valid. Must be one of: ${NATIVITY_OPTIONS.join(", ")}.`,
+      `Nativity "${raw_nativity}" is not valid. Must be one of: ${nativityOptions.join(", ")}.`,
     );
 
   // ── Location fields ──────────────────────────────────────────────────────
@@ -263,7 +264,7 @@ function csvRowToInput(
         scientific_name,
         common_name,
         conservation_status: conservation_status_result.data!,
-        nativity: nativity_result.data!,
+        nativity: nativity_result.data! as any,  // Dynamic nativity from config
       },
       location: {
         country: "Philippines",
@@ -405,6 +406,29 @@ function BatchUploadPage() {
   const [saveProgress, setSaveProgress] = useState<{ done: number; total: number } | null>(null);
   const [rowErrors, setRowErrors] = useState<RowError[]>([]);
   const [savedCount, setSavedCount] = useState<number | null>(null);
+  const [nativityOptions, setNativityOptions] = useState<string[]>(["Native", "Introduced", "Endemic"]);
+
+  // Load nativity options from config
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadConfig = async () => {
+      try {
+        const config = await getHerbariumConfig();
+        if (isMounted) {
+          setNativityOptions(config.nativityOptions ?? ["Native", "Introduced", "Endemic"]);
+        }
+      } catch {
+        // Use defaults if config loading fails
+      }
+    };
+
+    void loadConfig();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   async function handleFile(file: File) {
     if (!file.name.endsWith(".csv")) {
@@ -463,7 +487,7 @@ function BatchUploadPage() {
     // Validate all rows first
     const validationErrors: RowError[] = [];
     for (let i = 0; i < parsed.rows.length; i++) {
-      const result = csvRowToInput(parsed.headers, parsed.rows[i]);
+      const result = csvRowToInput(parsed.headers, parsed.rows[i], nativityOptions);
       if (!result.ok) {
         const accession =
           (() => {
@@ -488,7 +512,7 @@ function BatchUploadPage() {
     let saved = 0;
 
     for (let i = 0; i < parsed.rows.length; i++) {
-      const result = csvRowToInput(parsed.headers, parsed.rows[i]);
+      const result = csvRowToInput(parsed.headers, parsed.rows[i], nativityOptions);
       if (!result.ok) continue; // already caught above
 
       try {

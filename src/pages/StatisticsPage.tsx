@@ -3,6 +3,7 @@ import {
   getCollectionStats,
   type CollectionStats,
 } from "@/api/statistics";
+import { getHerbariumConfig } from "@/api/config";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
@@ -64,13 +65,6 @@ const CONSERVATION_COLORS: Record<string, string> = {
   Unknown: "#a1a1aa",
 };
 
-const NATIVITY_COLORS: Record<string, string> = {
-  Native: "#4d7c0f",
-  Endemic: "#16a34a",
-  Introduced: "#eab308",
-  Unknown: "#a1a1aa",
-};
-
 function buildChartConfig(
   entries: { name: string }[],
   colorMap?: Record<string, string>,
@@ -105,6 +99,12 @@ function StatisticsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [nativityColors, setNativityColors] = useState<Record<string, string>>({
+    Native: "#4d7c0f",
+    Endemic: "#16a34a",
+    Introduced: "#eab308",
+    Unknown: "#a1a1aa",
+  });
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -120,6 +120,49 @@ function StatisticsPage() {
       }
     })();
     return () => { cancelled = true; };
+  }, []);
+
+  // Load nativity colors from config
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadNativityColors = async () => {
+      try {
+        const config = await getHerbariumConfig();
+        if (isMounted && config.nativityOptions) {
+          const baseColors: Record<string, string> = {
+            Native: "#4d7c0f",
+            Endemic: "#16a34a",
+            Introduced: "#eab308",
+            Unknown: "#a1a1aa",
+          };
+          
+          // Add colors for any new nativity values not in the base colors
+          const additionalColors = [
+            "#84cc16", "#a3e635", "#bef264", "#d9f99d",
+            "#3f6212", "#365314", "#22c55e", "#4ade80", "#86efac",
+          ];
+          let colorIndex = 0;
+          
+          config.nativityOptions.forEach((option) => {
+            if (!baseColors[option]) {
+              baseColors[option] = additionalColors[colorIndex % additionalColors.length];
+              colorIndex++;
+            }
+          });
+          
+          setNativityColors(baseColors);
+        }
+      } catch {
+        // Use default colors if config loading fails
+      }
+    };
+
+    void loadNativityColors();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   async function handleDownloadPDF() {
@@ -245,7 +288,7 @@ function StatisticsPage() {
   const conservationConfig = buildChartConfig(conservationData, conservationColorsByLabel);
 
   // Nativity
-  const nativityConfig = buildChartConfig(stats.nativity, NATIVITY_COLORS);
+  const nativityConfig = buildChartConfig(stats.nativity, nativityColors);
 
   // Family — show top 10, rest as "Other"
   const topFamilies = stats.familyDistribution.slice(0, 10);
@@ -495,7 +538,7 @@ function StatisticsPage() {
         <div className="flex flex-wrap gap-2">
           {stats.nativity.map((n) => (
             <div key={n.name} className="flex items-center gap-1.5 text-xs text-zinc-600">
-              <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: NATIVITY_COLORS[n.name] ?? "#a1a1aa" }} />
+              <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: nativityColors[n.name] ?? "#a1a1aa" }} />
               {n.name} ({n.count})
             </div>
           ))}

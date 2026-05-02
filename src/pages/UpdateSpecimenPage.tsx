@@ -176,7 +176,7 @@ function UpdateSpecimenPage() {
 						<MultiForm
 							mode="update"
 							initialValues={formValues}
-							isAccessionReadOnly
+							isAccessionReadOnly={false}
 						/>
 					) : null}
 				</div>

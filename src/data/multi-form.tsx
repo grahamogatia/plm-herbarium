@@ -33,6 +33,7 @@ import {
   getSpeciesFamilies,
   saveSpecimenEntry,
   uploadSpecimenImage,
+  getCollectionRows,
 } from "@/api/collection";
 import type { FormErrors, FormValues } from "@/components/pages/collection/multi-form/types";
 import {
@@ -46,7 +47,6 @@ import {
 } from "@/api/config";
 
 const conservationOptions = SpeciesSchema.shape.conservation_status.unwrap().options;
-const nativityOptions = SpeciesSchema.shape.nativity.unwrap().options;
 
 const initialValues: FormValues = {
   accesssion_no: "",
@@ -87,6 +87,31 @@ function accessionPatternToRegex(pattern: string): RegExp {
   const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const regexStr = escaped.replace(/#/g, "\\d");
   return new RegExp(`^${regexStr}$`);
+}
+
+/** Check if an accession code already exists in the collection (for overlap validation during edit). */
+async function checkAccessionCodeOverlap(
+  newAccessionCode: string,
+  originalAccessionCode?: string
+): Promise<boolean> {
+  // If the code hasn't changed, no overlap
+  if (originalAccessionCode && newAccessionCode === originalAccessionCode) {
+    return false;
+  }
+
+  try {
+    const rows = await getCollectionRows();
+    // Check if any existing code matches the new code (excluding the original)
+    return rows.some(
+      (row) =>
+        row.accessionNo === newAccessionCode &&
+        row.accessionNo !== originalAccessionCode
+    );
+  } catch (error) {
+    console.error("Error checking accession code overlap:", error);
+    // If we can't check, don't block the form (fail open)
+    return false;
+  }
 }
 
 const steps = [
@@ -164,6 +189,7 @@ export function MultiForm({
     useState<SuccessSubmissionSummary | null>(null);
   const [familyOptions, setFamilyOptions] = useState<string[]>([]);
   const [collectorOptions, setCollectorOptions] = useState<string[]>([]);
+  const [nativityOptions, setNativityOptions] = useState<string[]>(["Native", "Introduced", "Endemic"]);
   const [herbariumConfig, setHerbariumConfig] = useState<HerbariumConfig | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -187,6 +213,7 @@ export function MultiForm({
         setFamilyOptions(families);
         setCollectorOptions(collectors);
         setHerbariumConfig(config);
+        setNativityOptions(config.nativityOptions ?? ["Native", "Introduced", "Endemic"]);
       } catch {
         if (!isMounted) {
           return;
@@ -240,7 +267,7 @@ export function MultiForm({
     setSuccessSummary(null);
   };
 
-  const validateStep = (step: number): boolean => {
+  const validateStep = async (step: number): Promise<boolean> => {
     const requiredFields = herbariumConfig?.requiredFields ?? [];
     const stepFields = STEP_FIELDS[step] ?? [];
     const stepErrors: FormErrors = {};
@@ -273,6 +300,17 @@ export function MultiForm({
         stepErrors.accesssion_no =
           stepErrors.accesssion_no ??
           `Must match pattern: ${herbariumConfig.accessionPattern}`;
+      }
+
+      // Check for accession code overlap when editing (in update mode)
+      if (!stepErrors.accesssion_no && mode === "update" && providedInitialValues) {
+        const hasOverlap = await checkAccessionCodeOverlap(
+          values.accesssion_no.trim(),
+          providedInitialValues.accesssion_no,
+        );
+        if (hasOverlap) {
+          stepErrors.accesssion_no = `Accession code '${values.accesssion_no.trim()}' already exists in the collection.`;
+        }
       }
     }
 
@@ -314,8 +352,8 @@ export function MultiForm({
     return true;
   };
 
-  const handleNext = () => {
-    if (!validateStep(currentStep)) {
+  const handleNext = async () => {
+    if (!(await validateStep(currentStep))) {
       return;
     }
 
@@ -380,7 +418,7 @@ export function MultiForm({
 
     // Re-validate all data steps (0–3) before submission
     for (let step = 0; step <= 3; step++) {
-      if (!validateStep(step)) {
+      if (!(await validateStep(step))) {
         setCurrentStep(step);
         return;
       }

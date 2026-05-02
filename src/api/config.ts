@@ -177,6 +177,7 @@ export type HerbariumConfig = {
   requiredFields: FormFieldKey[];
   tableAttributes: TableAttribute[];
   summaryFields: SummaryField[];
+  nativityOptions: string[];
 };
 
 const CONFIG_DOC_REF = doc(db, "config", "herbarium");
@@ -217,6 +218,7 @@ const DEFAULT_CONFIG: HerbariumConfig = {
     "altitude",
     "coordinates",
   ],
+  nativityOptions: ["Native", "Introduced", "Endemic"],
 };
 
 export async function getHerbariumConfig(): Promise<HerbariumConfig> {
@@ -241,6 +243,9 @@ export async function getHerbariumConfig(): Promise<HerbariumConfig> {
     summaryFields: Array.isArray(data.summaryFields)
       ? data.summaryFields
       : DEFAULT_CONFIG.summaryFields,
+    nativityOptions: Array.isArray(data.nativityOptions)
+      ? data.nativityOptions
+      : DEFAULT_CONFIG.nativityOptions,
   };
 }
 
