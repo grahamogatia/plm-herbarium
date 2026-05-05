@@ -568,7 +568,7 @@ function BatchUploadPage() {
   const [rowErrors, setRowErrors] = useState<RowError[]>([]);
   const [savedCount, setSavedCount] = useState<number | null>(null);
   const [nativityOptions, setNativityOptions] = useState<string[]>(["Native", "Introduced", "Endemic"]);
-  const [requiredFields, setRequiredFields] = useState<string[]>(["scientific_name", "family", "collector_names", "accesssion_no", "locality", "province", "region", "habitat", "habit"]);
+  const [requiredFields, setRequiredFields] = useState<string[]>(["scientific_name", "family", "accesssion_no", "locality", "province", "region", "habitat", "habit"]);
 
   // Load options from config
   useEffect(() => {
@@ -683,28 +683,43 @@ function BatchUploadPage() {
 
     const saveErrors: RowError[] = [];
     let saved = 0;
+    let done = 0;
 
+    // Build the list of valid inputs to save (already validated above)
+    const tasks: { i: number; input: Parameters<typeof saveSpecimenEntry>[0] }[] = [];
     for (let i = 0; i < parsed.rows.length; i++) {
       const result = csvRowToInput(parsed.headers, parsed.rows[i], nativityOptions, requiredFields);
-      if (!result.ok) continue; // already caught above
+      if (result.ok) tasks.push({ i, input: result.input });
+    }
 
+    // Run up to CONCURRENCY saves at a time
+    const CONCURRENCY = 5;
+    let cursor = 0;
+
+    async function runNext(): Promise<void> {
+      if (cursor >= tasks.length) return;
+      const { i, input } = tasks[cursor++];
       try {
-        await saveSpecimenEntry(result.input, {
+        await saveSpecimenEntry(input, {
           mode: "create",
           performedBy: currentUser?.email ?? "unknown",
         });
         saved++;
       } catch (err) {
-        const accession = result.input.specimen.accesssion_no || `Row ${i + 1}`;
+        const accession = input.specimen.accesssion_no || `Row ${i + 1}`;
         saveErrors.push({
           rowIndex: i,
           accession,
           errors: [err instanceof Error ? err.message : "Unknown error."],
         });
       }
-
-      setSaveProgress({ done: i + 1, total: parsed.rows.length });
+      done++;
+      setSaveProgress({ done, total: tasks.length });
+      return runNext();
     }
+
+    // Kick off CONCURRENCY workers in parallel
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, tasks.length) }, runNext));
 
     setIsSaving(false);
     setSavedCount(saved);

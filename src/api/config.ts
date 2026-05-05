@@ -204,7 +204,6 @@ const DEFAULT_CONFIG: HerbariumConfig = {
     "accesssion_no",
     "scientific_name",
     "family",
-    "collector_names",
     "date_collected",
     "habitat",
     "habit",
