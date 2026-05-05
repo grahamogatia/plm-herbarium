@@ -7,6 +7,7 @@ type SpecimenDoc = {
   collector_ids: number[];
   location_id: number;
   date_collected?: unknown;
+  habit?: string;
   isDeleted?: boolean;
 };
 
@@ -35,6 +36,7 @@ export type CollectionStats = {
   familyDistribution: CountEntry[];
   conservationStatus: CountEntry[];
   nativity: CountEntry[];
+  habitDistribution: CountEntry[];
   specimensOverTime: { month: string; count: number }[];
   specimensByRegion: CountEntry[];
   collectorActivity: CountEntry[];
@@ -91,6 +93,7 @@ export async function getCollectionStats(): Promise<CollectionStats> {
   const familyMap = new Map<string, number>();
   const conservationMap = new Map<string, number>();
   const nativityMap = new Map<string, number>();
+  const habitMap = new Map<string, number>();
   const monthMap = new Map<string, number>();
   const regionMap = new Map<string, number>();
   const collectorMap = new Map<string, number>();
@@ -109,6 +112,10 @@ export async function getCollectionStats(): Promise<CollectionStats> {
     // Nativity
     const nat = species?.nativity || "Unknown";
     nativityMap.set(nat, (nativityMap.get(nat) ?? 0) + 1);
+
+    // Habit
+    const habit = (specimen as { habit?: string }).habit || "Unknown";
+    habitMap.set(habit, (habitMap.get(habit) ?? 0) + 1);
 
     // Date
     const date = toDate(specimen.date_collected);
@@ -145,6 +152,7 @@ export async function getCollectionStats(): Promise<CollectionStats> {
     familyDistribution: toSorted(familyMap),
     conservationStatus: toSorted(conservationMap),
     nativity: toSorted(nativityMap),
+    habitDistribution: toSorted(habitMap),
     specimensOverTime,
     specimensByRegion: toSorted(regionMap),
     collectorActivity: toSorted(collectorMap),

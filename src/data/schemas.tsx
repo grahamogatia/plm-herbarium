@@ -8,13 +8,15 @@ export const SpecimenSchema = z.object({
   collector_ids: z.array(z.number()).min(1), //FK
   location_id: z.number(), //FK
 
-  date_collected: z.date(),
+  date_collected: z.date().optional(),
   habitat: z.string(),
   habit: z.string().min(1, "Habit is required."),
 
-  altitude_masl: z.number(),
-  plant_height_m: z.number(),
-  dbh_cm: z.number().nullable(),
+  altitude_masl: z.string().optional(),
+  plant_height_m: z.string().optional(),
+  dbh_cm: z.string().optional().nullable(),
+
+  phenophase: z.string().optional(),
 
   flower_description: z.string().optional(),
   fruit_description: z.string().optional(),

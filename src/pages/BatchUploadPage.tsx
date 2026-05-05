@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight, CloudUpload, FileSpreadsheet, X } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, CloudUpload, FileSpreadsheet, Pencil, Save, X } from "lucide-react";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ const FIELD_GROUPS: { label: string; fields: string[] }[] = [
   },
   {
     label: "Specimen Details",
-    fields: ["Habit", "Habitat", "Altitude (MASL)", "Plant Height (M)", "DBH (CM)"],
+    fields: ["Habit", "Habitat", "Altitude (MASL)", "Plant Height (M)", "DBH (CM)", "Phenophase"],
   },
   {
     label: "Descriptions",
@@ -143,44 +143,157 @@ function parseFile(file: File): Promise<ParsedCSV | { message: string }> {
 
 const CONSERVATION_OPTIONS = SpeciesSchema.shape.conservation_status.unwrap().options;
 
+// ── Normalization helpers ─────────────────────────────────────────────────────
+
+/** Title-case a plain text value (e.g. "NORTHERN LUZON" → "Northern Luzon") */
+function toTitleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Normalise a single collector name to "A. B. Lastname" format.
+ *   "Antonio B. Santos"  → "A. B. Santos"
+ *   "a. santos"          → "A. Santos"
+ *   "A. Santos"          → "A. Santos"  (already correct)
+ */
+function normalizeCollectorName(raw: string): string {
+  const parts = raw.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return raw;
+
+  const surname = parts[parts.length - 1];
+  const givenParts = parts.slice(0, -1);
+
+  const initials = givenParts.map((p) =>
+    /^[A-Za-z]\.$/.test(p) ? p.toUpperCase() : p.charAt(0).toUpperCase() + ".",
+  );
+
+  // Capitalise surname: first letter up, rest down (handles all-caps input)
+  const normalizedSurname =
+    surname.charAt(0).toUpperCase() + surname.slice(1).toLowerCase();
+
+  return [...initials, normalizedSurname].join(" ");
+}
+
+/**
+ * Parse a date string in MM/DD/YYYY format (primary).
+ * Also accepts YYYY-MM-DD (ISO / Excel export) and MM-DD-YYYY variants.
+ * Returns null if unparseable or not a valid calendar date.
+ */
+function parseCollectionDate(raw: string): Date | null {
+  const s = raw.trim();
+
+  // MM/DD/YYYY  |  MM-DD-YYYY  |  MM.DD.YYYY
+  const mdyMatch = s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/);
+  if (mdyMatch) {
+    const [, m, d, y] = mdyMatch.map(Number);
+    const date = new Date(y, m - 1, d);
+    if (date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d)
+      return date;
+  }
+
+  // YYYY-MM-DD  (ISO / Excel default export)
+  const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    const [, y, m, d] = isoMatch.map(Number);
+    const date = new Date(y, m - 1, d);
+    if (date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d)
+      return date;
+  }
+
+  return null;
+}
+
 type RowValidationResult =
   | { ok: true; input: Parameters<typeof saveSpecimenEntry>[0] }
   | { ok: false; errors: string[] };
+
+/**
+ * Normalise a raw CSV row in-place by column header so the preview table
+ * and later validation both see clean values.
+ */
+function normalizeRow(headers: string[], row: string[]): string[] {
+  return headers.map((header, i) => {
+    let val = (row[i] ?? "").trim();
+    // Treat a lone dash as empty
+    if (val === "-") val = "";
+
+    switch (header) {
+      case "Scientific Name":
+        // Keep as-is (botanical naming conventions)
+        return val;
+
+      case "Flower Description":
+      case "Fruit Description":
+      case "Leaf Description":
+      case "Notes":
+        return toTitleCase(val);
+
+      case "Conservation Status":
+        return val ? val.toUpperCase() : "N/A";
+
+      case "Nativity":
+        return val || "Not Indicated";
+
+      case "Collectors": {
+        if (!val) return val;
+        return val
+          .split(",")
+          .map((s) => normalizeCollectorName(s.trim()))
+          .filter(Boolean)
+          .join(", ");
+      }
+
+      default:
+        return val;
+    }
+  });
+}
 
 function csvRowToInput(
   headers: string[],
   row: string[],
   nativityOptions: string[],
+  requiredFields: string[] = [],
 ): RowValidationResult {
+  const isRequired = (field: string) => requiredFields.includes(field);
   const get = (col: string) => {
     const i = headers.indexOf(col);
-    return i >= 0 ? (row[i] ?? "").trim() : "";
+    const raw = i >= 0 ? (row[i] ?? "").trim() : "";
+    return raw === "-" ? "" : raw;
   };
 
   const errors: string[] = [];
 
   // ── Species fields ───────────────────────────────────────────────────────
+  // Values are already normalized by normalizeRow() at parse time
   const scientific_name = get("Scientific Name");
   const family = get("Family");
   const common_name = get("Common Name") || undefined;
-  const raw_conservation = get("Conservation Status").toUpperCase();
-  const raw_nativity = get("Nativity");
+  const raw_conservation = get("Conservation Status");
+  // "N/A" is the display default for empty — treat it as absent for DB storage
+  const conservation_for_validation = (raw_conservation && raw_conservation !== "N/A") ? raw_conservation : undefined;
+  const raw_nativity = get("Nativity") || "Not Indicated";
 
-  if (!scientific_name) errors.push("Scientific Name is required.");
-  if (!family) errors.push("Family is required.");
+  if (isRequired("scientific_name") && !scientific_name) errors.push("Scientific Name is required.");
+  if (isRequired("family") && !family) errors.push("Family is required.");
 
-  const conservation_status_result = z
-    .enum(CONSERVATION_OPTIONS)
-    .safeParse(raw_conservation);
+  const conservation_status_result = conservation_for_validation
+    ? z.enum(CONSERVATION_OPTIONS).safeParse(conservation_for_validation)
+    : { success: true as const, data: undefined };
   if (!conservation_status_result.success)
     errors.push(
-      `Conservation Status "${raw_conservation}" is not valid. Must be one of: ${CONSERVATION_OPTIONS.join(", ")}.`,
+      `Conservation Status "${conservation_for_validation}" is not valid. Must be one of: ${CONSERVATION_OPTIONS.join(", ")}, or leave blank for N/A.`,
     );
 
-  const nativity_result = z.enum(nativityOptions as [string, ...string[]]).safeParse(raw_nativity);
+  const effectiveNativityOptions = nativityOptions.includes("Not Indicated")
+    ? nativityOptions
+    : [...nativityOptions, "Not Indicated"];
+  const nativity_result = z.enum(effectiveNativityOptions as [string, ...string[]]).safeParse(raw_nativity);
   if (!nativity_result.success)
     errors.push(
-      `Nativity "${raw_nativity}" is not valid. Must be one of: ${nativityOptions.join(", ")}.`,
+      `Nativity "${raw_nativity}" is not valid. Must be one of: ${effectiveNativityOptions.join(", ")}.`,
     );
 
   // ── Location fields ──────────────────────────────────────────────────────
@@ -190,9 +303,9 @@ function csvRowToInput(
   const raw_lat = get("Latitude");
   const raw_lng = get("Longitude");
 
-  if (!locality) errors.push("Locality is required.");
-  if (!province) errors.push("Province is required.");
-  if (!region) errors.push("Region is required.");
+  if (isRequired("locality") && !locality) errors.push("Locality is required.");
+  if (isRequired("province") && !province) errors.push("Province is required.");
+  if (isRequired("region") && !region) errors.push("Region is required.");
 
   const latitude = raw_lat ? Number(raw_lat) : undefined;
   const longitude = raw_lng ? Number(raw_lng) : undefined;
@@ -212,25 +325,24 @@ function csvRowToInput(
   }
 
   // ── Collector fields ─────────────────────────────────────────────────────
+  // Already normalized to "A. Lastname" format by normalizeRow()
   const raw_collectors = get("Collectors");
   const collector_names = raw_collectors
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  if (collector_names.length === 0) errors.push("At least one Collector is required.");
+  if (isRequired("collector_names") && collector_names.length === 0) errors.push("At least one Collector is required.");
 
   // ── Specimen fields ──────────────────────────────────────────────────────
   const accesssion_no = get("Accession Number");
-  if (!accesssion_no) errors.push("Accession Number is required.");
+  if (isRequired("accesssion_no") && !accesssion_no) errors.push("Accession Number is required.");
 
   const raw_date = get("Date Collected (MM/DD/YYYY)");
   let date_collected: Date | undefined;
-  if (!raw_date) {
-    errors.push("Date Collected is required.");
-  } else {
-    const parsed_date = new Date(raw_date);
-    if (isNaN(parsed_date.getTime())) {
-      errors.push(`Date Collected "${raw_date}" is not a valid date (use MM/DD/YYYY).`);
+  if (raw_date) {
+    const parsed_date = parseCollectionDate(raw_date);
+    if (!parsed_date) {
+      errors.push(`Date Collected "${raw_date}" is not a valid date. Use MM/DD/YYYY (e.g. 01/15/2024).`);
     } else {
       date_collected = parsed_date;
     }
@@ -238,21 +350,14 @@ function csvRowToInput(
 
   const habit = get("Habit");
   const habitat = get("Habitat");
-  if (!habit) errors.push("Habit is required.");
-  if (!habitat) errors.push("Habitat is required.");
+  if (isRequired("habit") && !habit) errors.push("Habit is required.");
+  if (isRequired("habitat") && !habitat) errors.push("Habitat is required.");
 
-  const raw_altitude = get("Altitude (MASL)");
-  const raw_height = get("Plant Height (M)");
+  const altitude_masl = get("Altitude (MASL)") || undefined;
+  const plant_height_m = get("Plant Height (M)") || undefined;
   const raw_dbh = get("DBH (CM)");
-
-  const altitude_masl = raw_altitude !== "" ? Number(raw_altitude) : NaN;
-  const plant_height_m = raw_height !== "" ? Number(raw_height) : NaN;
-  const dbh_cm = raw_dbh !== "" ? Number(raw_dbh) : null;
-
-  if (isNaN(altitude_masl)) errors.push("Altitude (MASL) must be a number.");
-  if (isNaN(plant_height_m)) errors.push("Plant Height (M) must be a number.");
-  if (raw_dbh !== "" && dbh_cm !== null && isNaN(dbh_cm))
-    errors.push("DBH (CM) must be a number.");
+  const dbh_cm = raw_dbh || undefined;
+  const phenophase = get("Phenophase") || undefined;
 
   if (errors.length > 0) return { ok: false, errors };
 
@@ -263,7 +368,7 @@ function csvRowToInput(
         family,
         scientific_name,
         common_name,
-        conservation_status: conservation_status_result.data!,
+        conservation_status: conservation_status_result.success ? conservation_status_result.data : undefined,
         nativity: nativity_result.data! as any,  // Dynamic nativity from config
       },
       location: {
@@ -277,12 +382,13 @@ function csvRowToInput(
       collectors: collector_names.map((name) => ({ name })),
       specimen: {
         accesssion_no,
-        date_collected: date_collected!,
+        date_collected,
         habit,
         habitat,
         altitude_masl,
         plant_height_m,
-        dbh_cm: raw_dbh !== "" ? dbh_cm : null,
+        dbh_cm,
+        phenophase,
         flower_description: get("Flower Description") || undefined,
         fruit_description: get("Fruit Description") || undefined,
         leaf_description: get("Leaf Description") || undefined,
@@ -302,10 +408,20 @@ type SpecimenSheetProps = {
   parsed: ParsedCSV;
   activeIndex: number;
   onNavigate: (index: number) => void;
+  onRowUpdate: (rowIndex: number, updatedRow: string[]) => void;
 };
 
-function SpecimenSheet({ open, onOpenChange, parsed, activeIndex, onNavigate }: SpecimenSheetProps) {
+function SpecimenSheet({ open, onOpenChange, parsed, activeIndex, onNavigate, onRowUpdate }: SpecimenSheetProps) {
   const row = parsed.rows[activeIndex];
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValues, setEditValues] = useState<Record<string, string>>({});
+
+  // Reset edit state when row changes
+  useEffect(() => {
+    setIsEditing(false);
+    setEditValues({});
+  }, [activeIndex]);
+
   if (!row) return null;
 
   const getValue = (field: string) => {
@@ -313,8 +429,29 @@ function SpecimenSheet({ open, onOpenChange, parsed, activeIndex, onNavigate }: 
     return colIndex >= 0 ? (row[colIndex] ?? "") : "";
   };
 
+  const getEditValue = (field: string) =>
+    field in editValues ? editValues[field] : getValue(field);
+
   const accessionNo = getValue("Accession Number");
   const scientificName = getValue("Scientific Name");
+
+  function startEditing() {
+    const initial: Record<string, string> = {};
+    for (const header of parsed.headers) {
+      initial[header] = getValue(header);
+    }
+    setEditValues(initial);
+    setIsEditing(true);
+  }
+
+  function saveEdits() {
+    const updatedRow = parsed.headers.map((header) =>
+      header in editValues ? editValues[header] : getValue(header),
+    );
+    onRowUpdate(activeIndex, updatedRow);
+    setIsEditing(false);
+    setEditValues({});
+  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -349,6 +486,19 @@ function SpecimenSheet({ open, onOpenChange, parsed, activeIndex, onNavigate }: 
               Next
               <ChevronRight className="size-4" />
             </Button>
+            <div className="ml-auto">
+              {isEditing ? (
+                <Button size="sm" onClick={saveEdits} className="gap-1">
+                  <Save className="size-3.5" />
+                  Save
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" onClick={startEditing} className="gap-1">
+                  <Pencil className="size-3.5" />
+                  Edit
+                </Button>
+              )}
+            </div>
           </div>
         </SheetHeader>
 
@@ -357,8 +507,9 @@ function SpecimenSheet({ open, onOpenChange, parsed, activeIndex, onNavigate }: 
             const entries = group.fields.map((field) => ({
               field,
               value: getValue(field),
+              editValue: getEditValue(field),
             }));
-            const hasAnyValue = entries.some((e) => e.value !== "");
+            const hasAnyValue = isEditing || entries.some((e) => e.value !== "");
             if (!hasAnyValue) return null;
 
             return (
@@ -367,16 +518,26 @@ function SpecimenSheet({ open, onOpenChange, parsed, activeIndex, onNavigate }: 
                   {group.label}
                 </p>
                 <div className="divide-y divide-zinc-100 rounded-lg border border-zinc-100 bg-zinc-50">
-                  {entries.map(({ field, value }) => (
+                  {entries.map(({ field, value, editValue }) => (
                     <div key={field} className="flex flex-col px-3 py-2">
                       <span className="text-xs font-medium text-zinc-500">{field}</span>
-                      <span
-                        className={`text-sm text-zinc-800 break-words${
-                          ITALIC_COLUMNS.has(field) ? " italic" : ""
-                        }`}
-                      >
-                        {value || <span className="text-zinc-300">—</span>}
-                      </span>
+                      {isEditing ? (
+                        <input
+                          className="mt-1 w-full rounded border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-800 focus:outline-none focus:ring-1 focus:ring-lime-500"
+                          value={editValue}
+                          onChange={(e) =>
+                            setEditValues((prev) => ({ ...prev, [field]: e.target.value }))
+                          }
+                        />
+                      ) : (
+                        <span
+                          className={`text-sm text-zinc-800 break-words${
+                            ITALIC_COLUMNS.has(field) ? " italic" : ""
+                          }`}
+                        >
+                          {value || <span className="text-zinc-300">—</span>}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -407,8 +568,9 @@ function BatchUploadPage() {
   const [rowErrors, setRowErrors] = useState<RowError[]>([]);
   const [savedCount, setSavedCount] = useState<number | null>(null);
   const [nativityOptions, setNativityOptions] = useState<string[]>(["Native", "Introduced", "Endemic"]);
+  const [requiredFields, setRequiredFields] = useState<string[]>(["scientific_name", "family", "collector_names", "accesssion_no", "locality", "province", "region", "habitat", "habit"]);
 
-  // Load nativity options from config
+  // Load options from config
   useEffect(() => {
     let isMounted = true;
 
@@ -417,6 +579,9 @@ function BatchUploadPage() {
         const config = await getHerbariumConfig();
         if (isMounted) {
           setNativityOptions(config.nativityOptions ?? ["Native", "Introduced", "Endemic"]);
+          if (config.requiredFields && config.requiredFields.length > 0) {
+            setRequiredFields(config.requiredFields);
+          }
         }
       } catch {
         // Use defaults if config loading fails
@@ -430,8 +595,15 @@ function BatchUploadPage() {
     };
   }, []);
 
-  async function handleFile(file: File) {
-    if (!file.name.endsWith(".csv")) {
+  function handleRowUpdate(rowIndex: number, updatedRow: string[]) {
+    if (!parsed) return;
+    const newRows = parsed.rows.map((r, i) => (i === rowIndex ? updatedRow : r));
+    setParsed({ ...parsed, rows: newRows });
+    // Clear any row errors for this row since the user edited it
+    setRowErrors((prev) => prev.filter((e) => e.rowIndex !== rowIndex));
+  }
+
+  async function handleFile(file: File) {    if (!file.name.endsWith(".csv")) {
       setError("Please upload a CSV file.");
       return;
     }
@@ -448,7 +620,8 @@ function BatchUploadPage() {
       setError(result.message);
       setFileName(null);
     } else {
-      setParsed(result);
+      const normalizedRows = result.rows.map((row) => normalizeRow(result.headers, row));
+      setParsed({ ...result, rows: normalizedRows });
     }
   }
 
@@ -487,7 +660,7 @@ function BatchUploadPage() {
     // Validate all rows first
     const validationErrors: RowError[] = [];
     for (let i = 0; i < parsed.rows.length; i++) {
-      const result = csvRowToInput(parsed.headers, parsed.rows[i], nativityOptions);
+      const result = csvRowToInput(parsed.headers, parsed.rows[i], nativityOptions, requiredFields);
       if (!result.ok) {
         const accession =
           (() => {
@@ -512,7 +685,7 @@ function BatchUploadPage() {
     let saved = 0;
 
     for (let i = 0; i < parsed.rows.length; i++) {
-      const result = csvRowToInput(parsed.headers, parsed.rows[i], nativityOptions);
+      const result = csvRowToInput(parsed.headers, parsed.rows[i], nativityOptions, requiredFields);
       if (!result.ok) continue; // already caught above
 
       try {
@@ -849,6 +1022,7 @@ function BatchUploadPage() {
             // keep the table page in sync
             setPage(Math.floor(index / PAGE_SIZE));
           }}
+          onRowUpdate={handleRowUpdate}
         />
       )}
     </>

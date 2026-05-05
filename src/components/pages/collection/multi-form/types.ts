@@ -20,6 +20,7 @@ export type FormValues = {
   altitude_masl: string;
   plant_height_m: string;
   dbh_cm: string;
+  phenophase: string;
   flower_description: NonNullable<Specimen["flower_description"]> | "";
   fruit_description: NonNullable<Specimen["fruit_description"]> | "";
   leaf_description: NonNullable<Specimen["leaf_description"]> | "";

@@ -290,6 +290,11 @@ function StatisticsPage() {
   // Nativity
   const nativityConfig = buildChartConfig(stats.nativity, nativityColors);
 
+  // Habit
+  const habitData = stats.habitDistribution.slice(0, 10);
+  const habitConfig = buildChartConfig(habitData);
+  const dominantHabit = habitData.length > 0 ? habitData[0] : null;
+
   // Family — show top 10, rest as "Other"
   const topFamilies = stats.familyDistribution.slice(0, 10);
   const otherFamiliesCount = stats.familyDistribution
@@ -547,9 +552,41 @@ function StatisticsPage() {
 
       <div className="h-px bg-zinc-100" />
 
+      {/* ===== HABIT DISTRIBUTION ===== */}
+      <section className="space-y-3">
+        <h3 className="text-base font-semibold text-zinc-700">5. Plant Habit</h3>
+        <SectionSummary>
+          {dominantHabit ? (
+            <><strong>{dominantHabit.name}</strong> is the most common plant habit with <strong>{dominantHabit.count.toLocaleString()}</strong> specimens.</>          ) : (
+            <>No habit data recorded yet.</>
+          )}
+        </SectionSummary>
+        {habitData.length > 0 && (
+          <Card>
+            <CardContent className="pt-6">
+              <ChartContainer config={habitConfig} className="h-64 w-full">
+                <BarChart data={habitData} margin={{ left: 12, right: 12 }}>
+                  <CartesianGrid vertical={false} />
+                  <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: 11 }} />
+                  <YAxis tickLine={false} axisLine={false} width={30} tick={{ fontSize: 11 }} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                    {habitData.map((entry, idx) => (
+                      <Cell key={entry.name} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        )}
+      </section>
+
+      <div className="h-px bg-zinc-100" />
+
       {/* ===== COLLECTION TIMELINE ===== */}
       <section className="space-y-3">
-        <h3 className="text-base font-semibold text-zinc-700">5. Collection Timeline</h3>
+        <h3 className="text-base font-semibold text-zinc-700">6. Collection Timeline</h3>
         <SectionSummary>
           Specimens have been collected from <strong>{timeStart}</strong> to <strong>{timeEnd}</strong>.
           {peakMonth && <> The peak collection period was <strong>{peakMonth.month}</strong> with <strong>{peakMonth.count.toLocaleString()}</strong> specimens recorded.</>}
@@ -585,7 +622,7 @@ function StatisticsPage() {
 
       {/* ===== GEOGRAPHIC DISTRIBUTION ===== */}
       <section className="space-y-3">
-        <h3 className="text-base font-semibold text-zinc-700">6. Geographic Distribution</h3>
+        <h3 className="text-base font-semibold text-zinc-700">7. Geographic Distribution</h3>
         <SectionSummary>
           Specimens originate from <strong>{stats.specimensByRegion.length}</strong> regions.
           {topRegion && <> <strong>{topRegion.name}</strong> is the most represented region with <strong>{topRegion.count.toLocaleString()}</strong> specimens.</>}
@@ -616,7 +653,7 @@ function StatisticsPage() {
 
       {/* ===== COLLECTOR ACTIVITY ===== */}
       <section className="space-y-3">
-        <h3 className="text-base font-semibold text-zinc-700">7. Collector Activity</h3>
+        <h3 className="text-base font-semibold text-zinc-700">8. Collector Activity</h3>
         <SectionSummary>
           A total of <strong>{stats.collectorActivity.length}</strong> collectors have contributed to the herbarium.
           {topCollector && <> The most active contributor is <strong>{topCollector.name}</strong> with <strong>{topCollector.count.toLocaleString()}</strong> specimens.</>}

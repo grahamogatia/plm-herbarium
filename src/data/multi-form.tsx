@@ -34,6 +34,7 @@ import {
   saveSpecimenEntry,
   uploadSpecimenImage,
   getCollectionRows,
+  getHabitOptions,
 } from "@/api/collection";
 import type { FormErrors, FormValues } from "@/components/pages/collection/multi-form/types";
 import {
@@ -68,6 +69,7 @@ const initialValues: FormValues = {
   altitude_masl: "",
   plant_height_m: "",
   dbh_cm: "",
+  phenophase: "",
   flower_description: "",
   fruit_description: "",
   leaf_description: "",
@@ -79,7 +81,7 @@ const STEP_FIELDS: Record<number, FormFieldKey[]> = {
   0: ["accesssion_no", "scientific_name", "common_name", "family", "conservation_status", "nativity"],
   1: ["country", "locality", "province", "region", "latitude", "longitude"],
   2: ["collector_names"],
-  3: ["date_collected", "habitat", "habit", "altitude_masl", "plant_height_m", "dbh_cm", "flower_description", "fruit_description", "leaf_description", "notes"],
+  3: ["date_collected", "habitat", "habit", "altitude_masl", "plant_height_m", "dbh_cm", "phenophase", "flower_description", "fruit_description", "leaf_description", "notes"],
 };
 
 /** Convert an accession pattern like "PLMH-#-##-###" into a RegExp (# = digit). */
@@ -147,13 +149,10 @@ const steps = [
   },
 ];
 
-const parseNumber = (value: string): number => Number(value);
+
 
 const parseOptionalNumber = (value: string): number | undefined =>
   value.trim() === "" ? undefined : Number(value);
-
-const parseNullableNumber = (value: string): number | null =>
-  value.trim() === "" ? null : Number(value);
 
 const collectorNameFormatPattern =
   /^(?:\p{Lu}\.\s)+(?:\p{L}[\p{L}'-]*)(?:\s+\p{L}[\p{L}'-]*)*$/u;
@@ -190,6 +189,7 @@ export function MultiForm({
   const [familyOptions, setFamilyOptions] = useState<string[]>([]);
   const [collectorOptions, setCollectorOptions] = useState<string[]>([]);
   const [nativityOptions, setNativityOptions] = useState<string[]>(["Native", "Introduced", "Endemic"]);
+  const [habitOptions, setHabitOptions] = useState<string[]>(["Tree", "Shrub", "Herb", "Vine", "Epiphyte", "Fern", "Grass", "Palm"]);
   const [herbariumConfig, setHerbariumConfig] = useState<HerbariumConfig | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -200,10 +200,11 @@ export function MultiForm({
 
     const loadLookups = async () => {
       try {
-        const [families, collectors, config] = await Promise.all([
+        const [families, collectors, config, dbHabits] = await Promise.all([
           getSpeciesFamilies(),
           getCollectorNames(),
           getHerbariumConfig(),
+          getHabitOptions(),
         ]);
 
         if (!isMounted) {
@@ -214,6 +215,13 @@ export function MultiForm({
         setCollectorOptions(collectors);
         setHerbariumConfig(config);
         setNativityOptions(config.nativityOptions ?? ["Native", "Introduced", "Endemic"]);
+
+        // Merge config presets with habit values already in the database
+        const presets = config.habitOptions ?? [];
+        const merged = Array.from(new Set([...presets, ...dbHabits])).sort((a, b) =>
+          a.localeCompare(b),
+        );
+        setHabitOptions(merged);
       } catch {
         if (!isMounted) {
           return;
@@ -454,12 +462,13 @@ export function MultiForm({
         collectors: collectorPayload,
         specimen: {
           accesssion_no: values.accesssion_no,
-          date_collected: new Date(values.date_collected),
+          date_collected: values.date_collected ? new Date(values.date_collected) : undefined,
           habitat: values.habitat,
           habit: values.habit,
-          altitude_masl: parseNumber(values.altitude_masl),
-          plant_height_m: parseNumber(values.plant_height_m),
-          dbh_cm: parseNullableNumber(values.dbh_cm),
+          altitude_masl: values.altitude_masl || undefined,
+          plant_height_m: values.plant_height_m || undefined,
+          dbh_cm: values.dbh_cm || undefined,
+          phenophase: values.phenophase || undefined,
           flower_description: values.flower_description || undefined,
           fruit_description: values.fruit_description || undefined,
           leaf_description: values.leaf_description || undefined,
@@ -601,6 +610,14 @@ export function MultiForm({
                 errors={errors}
                 onFieldChange={setField}
                 requiredFields={herbariumConfig?.requiredFields ?? []}
+                habitOptions={habitOptions}
+                onHabitOptionCreate={(newHabit) => {
+                  setHabitOptions((prev) =>
+                    Array.from(new Set([...prev, newHabit])).sort((a, b) =>
+                      a.localeCompare(b),
+                    ),
+                  );
+                }}
               />
             )}
 

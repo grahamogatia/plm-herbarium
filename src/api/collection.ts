@@ -358,12 +358,13 @@ export async function saveSpecimenEntry(
     species_id: speciesId,
     collector_ids: collectorIds,
     location_id: locationId,
-    date_collected: input.specimen.date_collected,
+    ...(input.specimen.date_collected != null ? { date_collected: input.specimen.date_collected } : {}),
     habitat: normalizeText(input.specimen.habitat),
     habit: input.specimen.habit,
-    altitude_masl: input.specimen.altitude_masl,
-    plant_height_m: input.specimen.plant_height_m,
+    altitude_masl: input.specimen.altitude_masl ?? null,
+    plant_height_m: input.specimen.plant_height_m ?? null,
     dbh_cm: input.specimen.dbh_cm ?? null,
+    ...(input.specimen.phenophase ? { phenophase: input.specimen.phenophase } : {}),
     ...(input.specimen.flower_description ? { flower_description: input.specimen.flower_description } : {}),
     ...(input.specimen.fruit_description ? { fruit_description: input.specimen.fruit_description } : {}),
     ...(input.specimen.leaf_description ? { leaf_description: input.specimen.leaf_description } : {}),
@@ -586,9 +587,14 @@ function normalizeSpecimenDocForSchema(specimen: SpecimenDoc): unknown {
       ? (specimen.date_collected as { toDate: () => Date }).toDate()
       : specimen.date_collected;
 
+  const data = specimen as Record<string, unknown>;
+
   return {
     ...specimen,
-    date_collected: normalizedDate,
+    date_collected: normalizedDate ?? undefined,
+    altitude_masl: data.altitude_masl != null ? String(data.altitude_masl) : undefined,
+    plant_height_m: data.plant_height_m != null ? String(data.plant_height_m) : undefined,
+    dbh_cm: data.dbh_cm != null ? String(data.dbh_cm) : undefined,
   };
 }
 
@@ -665,6 +671,28 @@ export async function getSpeciesFamilies(): Promise<string[]> {
   });
 
   return Array.from(familySet).sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Returns all unique habit values from existing specimens in Firestore.
+ * Used to populate the habit creatable dropdown.
+ */
+export async function getHabitOptions(): Promise<string[]> {
+  const specimensSnapshot = await getDocs(collection(db, "specimens"));
+
+  const habitSet = new Set<string>();
+
+  specimensSnapshot.docs.forEach((specimenDoc) => {
+    const data = specimenDoc.data();
+    if (data.isDeleted) return;
+    const habit = data?.habit;
+    if (typeof habit === "string") {
+      const normalized = normalizeText(habit);
+      if (normalized) habitSet.add(normalized);
+    }
+  });
+
+  return Array.from(habitSet).sort((a, b) => a.localeCompare(b));
 }
 
 export async function getCollectorNames(): Promise<string[]> {

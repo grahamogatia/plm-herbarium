@@ -24,6 +24,7 @@ export const ALL_FORM_FIELDS = [
   "altitude_masl",
   "plant_height_m",
   "dbh_cm",
+  "phenophase",
   "flower_description",
   "fruit_description",
   "leaf_description",
@@ -52,6 +53,7 @@ export const FORM_FIELD_LABELS: Record<FormFieldKey, string> = {
   altitude_masl: "Altitude (masl)",
   plant_height_m: "Plant Height (m)",
   dbh_cm: "DBH (cm)",
+  phenophase: "Phenophase",
   flower_description: "Flower Description",
   fruit_description: "Fruit Description",
   leaf_description: "Leaf Description",
@@ -109,6 +111,7 @@ export const ALL_SUMMARY_FIELDS = [
   // Details tab
   "plant_height",
   "dbh",
+  "phenophase",
   "flower_description",
   "fruit_description",
   "leaf_description",
@@ -139,6 +142,7 @@ export const SUMMARY_FIELD_LABELS: Record<SummaryField, string> = {
   coordinates: "Coordinates",
   plant_height: "Plant Height (m)",
   dbh: "DBH (cm)",
+  phenophase: "Phenophase",
   flower_description: "Flower Description",
   fruit_description: "Fruit Description",
   leaf_description: "Leaf Description",
@@ -167,6 +171,7 @@ export const SUMMARY_FIELD_TABS: Record<SummaryField, string> = {
   coordinates: "Locality",
   plant_height: "Details",
   dbh: "Details",
+  phenophase: "Details",
   flower_description: "Details",
   fruit_description: "Details",
   leaf_description: "Details",
@@ -178,6 +183,17 @@ export type HerbariumConfig = {
   tableAttributes: TableAttribute[];
   summaryFields: SummaryField[];
   nativityOptions: string[];
+  habitOptions: string[];
+  contactInfo: {
+    address: string;
+    email: string;
+    phone: string;
+  };
+  socialLinks: {
+    facebook: { url: string; enabled: boolean };
+    twitter: { url: string; enabled: boolean };
+    instagram: { url: string; enabled: boolean };
+  };
 };
 
 const CONFIG_DOC_REF = doc(db, "config", "herbarium");
@@ -219,6 +235,17 @@ const DEFAULT_CONFIG: HerbariumConfig = {
     "coordinates",
   ],
   nativityOptions: ["Native", "Introduced", "Endemic"],
+  habitOptions: ["Tree", "Shrub", "Herb", "Vine", "Epiphyte", "Fern", "Grass", "Palm"],
+  contactInfo: {
+    address: "Pamantasan ng Lungsod ng Maynila, Intramuros, Manila, Philippines",
+    email: "herbarium@plm.edu.ph",
+    phone: "+63 (2) 1234-5678",
+  },
+  socialLinks: {
+    facebook: { url: "https://facebook.com", enabled: true },
+    twitter: { url: "https://twitter.com", enabled: true },
+    instagram: { url: "https://instagram.com", enabled: true },
+  },
 };
 
 export async function getHerbariumConfig(): Promise<HerbariumConfig> {
@@ -246,6 +273,34 @@ export async function getHerbariumConfig(): Promise<HerbariumConfig> {
     nativityOptions: Array.isArray(data.nativityOptions)
       ? data.nativityOptions
       : DEFAULT_CONFIG.nativityOptions,
+    habitOptions: Array.isArray(data.habitOptions)
+      ? data.habitOptions
+      : DEFAULT_CONFIG.habitOptions,
+    contactInfo:
+      data.contactInfo && typeof data.contactInfo === "object"
+        ? {
+            address: typeof data.contactInfo.address === "string" ? data.contactInfo.address : DEFAULT_CONFIG.contactInfo.address,
+            email: typeof data.contactInfo.email === "string" ? data.contactInfo.email : DEFAULT_CONFIG.contactInfo.email,
+            phone: typeof data.contactInfo.phone === "string" ? data.contactInfo.phone : DEFAULT_CONFIG.contactInfo.phone,
+          }
+        : DEFAULT_CONFIG.contactInfo,
+    socialLinks:
+      data.socialLinks && typeof data.socialLinks === "object"
+        ? {
+            facebook: {
+              url: typeof data.socialLinks.facebook?.url === "string" ? data.socialLinks.facebook.url : DEFAULT_CONFIG.socialLinks.facebook.url,
+              enabled: typeof data.socialLinks.facebook?.enabled === "boolean" ? data.socialLinks.facebook.enabled : DEFAULT_CONFIG.socialLinks.facebook.enabled,
+            },
+            twitter: {
+              url: typeof data.socialLinks.twitter?.url === "string" ? data.socialLinks.twitter.url : DEFAULT_CONFIG.socialLinks.twitter.url,
+              enabled: typeof data.socialLinks.twitter?.enabled === "boolean" ? data.socialLinks.twitter.enabled : DEFAULT_CONFIG.socialLinks.twitter.enabled,
+            },
+            instagram: {
+              url: typeof data.socialLinks.instagram?.url === "string" ? data.socialLinks.instagram.url : DEFAULT_CONFIG.socialLinks.instagram.url,
+              enabled: typeof data.socialLinks.instagram?.enabled === "boolean" ? data.socialLinks.instagram.enabled : DEFAULT_CONFIG.socialLinks.instagram.enabled,
+            },
+          }
+        : DEFAULT_CONFIG.socialLinks,
   };
 }
 

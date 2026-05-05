@@ -82,6 +82,18 @@ function AdminPage() {
   const [newNativityValue, setNewNativityValue] = useState("");
   const nativityInputRef = useRef<HTMLInputElement>(null);
 
+  // Habit management state
+  const [newHabitValue, setNewHabitValue] = useState("");
+  const habitInputRef = useRef<HTMLInputElement>(null);
+
+  // Contact & social state (mirrors config fields while editing)
+  const [contactAddress, setContactAddress] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [socialFacebook, setSocialFacebook] = useState({ url: "", enabled: true });
+  const [socialTwitter, setSocialTwitter] = useState({ url: "", enabled: true });
+  const [socialInstagram, setSocialInstagram] = useState({ url: "", enabled: true });
+
   useEffect(() => {
     void fetchUsers();
   }, []);
@@ -190,6 +202,12 @@ function AdminPage() {
     try {
       const data = await getHerbariumConfig();
       setConfig(data);
+      setContactAddress(data.contactInfo.address);
+      setContactEmail(data.contactInfo.email);
+      setContactPhone(data.contactInfo.phone);
+      setSocialFacebook(data.socialLinks.facebook);
+      setSocialTwitter(data.socialLinks.twitter);
+      setSocialInstagram(data.socialLinks.instagram);
     } finally {
       setLoadingConfig(false);
     }
@@ -241,7 +259,13 @@ function AdminPage() {
     if (!config) return;
     setSavingConfig(true);
     try {
-      await saveHerbariumConfig(config);
+      const updated = {
+        ...config,
+        contactInfo: { address: contactAddress, email: contactEmail, phone: contactPhone },
+        socialLinks: { facebook: socialFacebook, twitter: socialTwitter, instagram: socialInstagram },
+      };
+      await saveHerbariumConfig(updated);
+      setConfig(updated);
       await writeLog("config_update", currentUser?.email ?? "admin", "Updated herbarium configuration");
       setConfigSaved(true);
       setTimeout(() => setConfigSaved(false), 2000);
@@ -295,6 +319,24 @@ function AdminPage() {
     setConfig({
       ...config,
       nativityOptions: config.nativityOptions.filter((n) => n !== value),
+    });
+  }
+
+  function addHabitOption(newValue: string) {
+    if (!config) return;
+    const trimmed = newValue.trim();
+    if (!trimmed || config.habitOptions.includes(trimmed)) return;
+    setConfig({
+      ...config,
+      habitOptions: [...config.habitOptions, trimmed],
+    });
+  }
+
+  function removeHabitOption(value: string) {
+    if (!config) return;
+    setConfig({
+      ...config,
+      habitOptions: config.habitOptions.filter((h) => h !== value),
     });
   }
 
@@ -882,7 +924,61 @@ function AdminPage() {
 
               <hr className="border-zinc-200" />
 
-              {/* 5. Nativity Options */}
+              {/* 5. Habit Options */}
+              <section>
+                <h3 className="text-sm font-semibold text-zinc-800 mb-1">Habit Values</h3>
+                <p className="text-xs text-zinc-500 mb-3">
+                  Manage the plant habit options available for specimens.
+                </p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {config.habitOptions.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => removeHabitOption(option)}
+                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-lime-100 text-lime-800 ring-1 ring-lime-300 hover:bg-lime-200 transition-colors"
+                    >
+                      {option}
+                      <X className="size-3 cursor-pointer" />
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <Input
+                      ref={habitInputRef}
+                      type="text"
+                      value={newHabitValue}
+                      onChange={(e) => setNewHabitValue(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter") {
+                          addHabitOption(newHabitValue);
+                          setNewHabitValue("");
+                          habitInputRef.current?.focus();
+                        }
+                      }}
+                      placeholder="Enter new habit value..."
+                      className="max-w-xs h-10"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      addHabitOption(newHabitValue);
+                      setNewHabitValue("");
+                      habitInputRef.current?.focus();
+                    }}
+                    className="gap-1"
+                  >
+                    <Plus className="size-3" />
+                    Add
+                  </Button>
+                </div>
+              </section>
+
+              <hr className="border-zinc-200" />
+
+              {/* 6. Nativity Options */}
               <section>
                 <h3 className="text-sm font-semibold text-zinc-800 mb-1">Nativity Values</h3>
                 <p className="text-xs text-zinc-500 mb-3">
@@ -931,6 +1027,83 @@ function AdminPage() {
                     <Plus className="size-3" />
                     Add
                   </Button>
+                </div>
+              </section>
+
+              {/* 7. Contact & Social Links */}
+              <section>
+                <h3 className="text-sm font-semibold text-zinc-800 mb-1">Contact Information</h3>
+                <p className="text-xs text-zinc-500 mb-3">
+                  Displayed in the site footer.
+                </p>
+                <div className="space-y-3 max-w-md">
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-600 mb-1">Address</label>
+                    <Input
+                      type="text"
+                      value={contactAddress}
+                      onChange={(e) => setContactAddress(e.target.value)}
+                      placeholder="Street, City, Country"
+                      className="h-9"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-600 mb-1">Email</label>
+                    <Input
+                      type="email"
+                      value={contactEmail}
+                      onChange={(e) => setContactEmail(e.target.value)}
+                      placeholder="email@example.com"
+                      className="h-9"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-600 mb-1">Phone</label>
+                    <Input
+                      type="text"
+                      value={contactPhone}
+                      onChange={(e) => setContactPhone(e.target.value)}
+                      placeholder="+63 (2) 1234-5678"
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+
+                <h3 className="text-sm font-semibold text-zinc-800 mt-6 mb-1">Social Links</h3>
+                <p className="text-xs text-zinc-500 mb-3">
+                  Toggle visibility and set URLs for each social platform.
+                </p>
+                <div className="space-y-3 max-w-md">
+                  {(
+                    [
+                      { label: "Facebook", state: socialFacebook, setState: setSocialFacebook },
+                      { label: "Twitter / X", state: socialTwitter, setState: setSocialTwitter },
+                      { label: "Instagram", state: socialInstagram, setState: setSocialInstagram },
+                    ] as const
+                  ).map(({ label, state, setState }) => (
+                    <div key={label} className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setState({ ...state, enabled: !state.enabled })}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${state.enabled ? "bg-lime-500" : "bg-zinc-300"}`}
+                        aria-pressed={state.enabled}
+                        aria-label={`Toggle ${label}`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition ${state.enabled ? "translate-x-4" : "translate-x-0"}`}
+                        />
+                      </button>
+                      <span className="text-xs font-medium text-zinc-700 w-24">{label}</span>
+                      <Input
+                        type="url"
+                        value={state.url}
+                        onChange={(e) => setState({ ...state, url: e.target.value })}
+                        placeholder={`https://${label.toLowerCase().replace(" / ", "").replace(" ", "")}.com/...`}
+                        className="flex-1 h-9"
+                        disabled={!state.enabled}
+                      />
+                    </div>
+                  ))}
                 </div>
               </section>
             </div>
