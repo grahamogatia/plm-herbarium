@@ -117,10 +117,10 @@ export async function getCollectionStats(): Promise<CollectionStats> {
     const habit = (specimen as { habit?: string }).habit || "Unknown";
     habitMap.set(habit, (habitMap.get(habit) ?? 0) + 1);
 
-    // Date
+    // Date (yearly)
     const date = toDate(specimen.date_collected);
     if (date) {
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const key = String(date.getFullYear());
       monthMap.set(key, (monthMap.get(key) ?? 0) + 1);
     }
 

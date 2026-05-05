@@ -354,7 +354,7 @@ function StatisticsPage() {
 
   const timeStart = stats.specimensOverTime[0]?.month ?? "";
   const timeEnd = stats.specimensOverTime[stats.specimensOverTime.length - 1]?.month ?? "";
-  const peakMonth = stats.specimensOverTime.reduce((a, b) => (a.count >= b.count ? a : b), stats.specimensOverTime[0]);
+  const peakYear = stats.specimensOverTime.reduce((a, b) => (a.count >= b.count ? a : b), stats.specimensOverTime[0]);
 
   return (
     <>
@@ -589,7 +589,7 @@ function StatisticsPage() {
         <h3 className="text-base font-semibold text-zinc-700">6. Collection Timeline</h3>
         <SectionSummary>
           Specimens have been collected from <strong>{timeStart}</strong> to <strong>{timeEnd}</strong>.
-          {peakMonth && <> The peak collection period was <strong>{peakMonth.month}</strong> with <strong>{peakMonth.count.toLocaleString()}</strong> specimens recorded.</>}
+          {peakYear && <> The peak collection year was <strong>{peakYear.month}</strong> with <strong>{peakYear.count.toLocaleString()}</strong> specimens recorded.</>}
         </SectionSummary>
         <Card>
           <CardContent className="pt-6">
@@ -692,7 +692,7 @@ function StatisticsPage() {
             <li>Nativity indicates whether a species is Native, Endemic, or Introduced to the Philippines.</li>
             <li>Collector activity reflects the top 5 contributors ranked by number of specimens collected.</li>
             <li>Regional data is derived from the recorded collection locality of each specimen.</li>
-            <li>Timeline data is grouped by month and year of collection date.</li>
+            <li>Timeline data is grouped by year of collection date.</li>
           </ul>
         </div>
         <div className="rounded-md border border-zinc-100 bg-zinc-50 px-4 py-4 space-y-2">
