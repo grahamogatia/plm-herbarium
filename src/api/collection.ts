@@ -270,10 +270,6 @@ export async function saveSpecimenEntry(
     new Set(input.collectors.map((collector) => normalizeText(collector.name)).filter(Boolean)),
   );
 
-  if (normalizedCollectorNames.length === 0) {
-    throw new Error("At least one collector is required.");
-  }
-
   const collectorIdByName = new Map<string, number>();
   const collectorNamesToCreate: string[] = [];
   for (const collectorName of normalizedCollectorNames) {
