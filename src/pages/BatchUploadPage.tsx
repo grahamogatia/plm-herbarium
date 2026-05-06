@@ -692,13 +692,8 @@ function BatchUploadPage() {
       if (result.ok) tasks.push({ i, input: result.input });
     }
 
-    // Run up to CONCURRENCY saves at a time
-    const CONCURRENCY = 5;
-    let cursor = 0;
-
-    async function runNext(): Promise<void> {
-      if (cursor >= tasks.length) return;
-      const { i, input } = tasks[cursor++];
+    // Save sequentially to avoid ID collisions and data mismatches
+    for (const { i, input } of tasks) {
       try {
         await saveSpecimenEntry(input, {
           mode: "create",
@@ -715,11 +710,7 @@ function BatchUploadPage() {
       }
       done++;
       setSaveProgress({ done, total: tasks.length });
-      return runNext();
     }
-
-    // Kick off CONCURRENCY workers in parallel
-    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, tasks.length) }, runNext));
 
     setIsSaving(false);
     setSavedCount(saved);
