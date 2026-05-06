@@ -34,6 +34,7 @@ import { Download, Leaf } from "lucide-react";
 import { TypographyH2 } from "@/components/ui/typography/typographyH2";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
+import PhilippinesMap from "@/components/pages/statistics/PhilippinesMap";
 
 // Lime / green palette
 const CHART_COLORS = [
@@ -627,6 +628,25 @@ function StatisticsPage() {
           Specimens originate from <strong>{stats.specimensByRegion.length}</strong> regions.
           {topRegion && <> <strong>{topRegion.name}</strong> is the most represented region with <strong>{topRegion.count.toLocaleString()}</strong> specimens.</>}
         </SectionSummary>
+
+        {/* Province map */}
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-xs text-zinc-400 mb-2 text-center">Specimen collection density by province</p>
+            <PhilippinesMap
+              data={Object.fromEntries(
+                stats.specimensByProvince.map((e) => [e.name, e.count])
+              )}
+            />
+            {/* Legend */}
+            <div className="flex items-center gap-2 mt-2 justify-center">
+              <span className="text-xs text-zinc-400">0</span>
+              <div className="h-2 w-32 rounded-full" style={{ background: "linear-gradient(to right, #a4e481, #4d7c0f)" }} />
+              <span className="text-xs text-zinc-400">max</span>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardContent className="pt-6">
             <ChartContainer config={regionConfig} className="h-72 w-full">

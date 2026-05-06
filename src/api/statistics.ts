@@ -27,6 +27,7 @@ type CollectorDoc = {
 type LocationDoc = {
   location_id: number;
   region?: string;
+  province?: string;
 };
 
 export type CountEntry = { name: string; count: number };
@@ -39,6 +40,7 @@ export type CollectionStats = {
   habitDistribution: CountEntry[];
   specimensOverTime: { month: string; count: number }[];
   specimensByRegion: CountEntry[];
+  specimensByProvince: CountEntry[];
   collectorActivity: CountEntry[];
 };
 
@@ -96,6 +98,7 @@ export async function getCollectionStats(): Promise<CollectionStats> {
   const habitMap = new Map<string, number>();
   const monthMap = new Map<string, number>();
   const regionMap = new Map<string, number>();
+  const provinceMap = new Map<string, number>();
   const collectorMap = new Map<string, number>();
 
   for (const specimen of activeSpecimens) {
@@ -129,6 +132,12 @@ export async function getCollectionStats(): Promise<CollectionStats> {
     const region = location?.region || "Unknown";
     regionMap.set(region, (regionMap.get(region) ?? 0) + 1);
 
+    // Province
+    const province = location?.province;
+    if (province) {
+      provinceMap.set(province, (provinceMap.get(province) ?? 0) + 1);
+    }
+
     // Collectors
     for (const cid of specimen.collector_ids ?? []) {
       const collector = collectorsById.get(cid);
@@ -155,6 +164,7 @@ export async function getCollectionStats(): Promise<CollectionStats> {
     habitDistribution: toSorted(habitMap),
     specimensOverTime,
     specimensByRegion: toSorted(regionMap),
+    specimensByProvince: toSorted(provinceMap),
     collectorActivity: toSorted(collectorMap),
   };
 }
