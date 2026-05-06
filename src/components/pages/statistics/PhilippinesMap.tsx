@@ -22,11 +22,23 @@ function PhilippinesMap({ data = {} }: Props) {
 
   function getColor(province: string): string {
     const count = data[province] ?? 0;
-    if (count === 0) return "#e4f4d1";
-    const intensity = count / maxCount;
-    const r = Math.round(164 + (77 - 164) * intensity);
-    const g = Math.round(228 + (124 - 228) * intensity);
-    const b = Math.round(129 + (15 - 129) * intensity);
+    if (count === 0) return "#ffffff";
+    // Use a sqrt scale so even small counts get visible color
+    const intensity = Math.sqrt(count / maxCount);
+    // White → vivid lime (#84cc16) → dark green (#166534)
+    // Two-stop: 0–0.5 = white→lime, 0.5–1 = lime→dark green
+    let r: number, g: number, b: number;
+    if (intensity <= 0.5) {
+      const t = intensity / 0.5;
+      r = Math.round(255 + (132 - 255) * t); // 255 → 132
+      g = Math.round(255 + (204 - 255) * t); // 255 → 204
+      b = Math.round(255 + (22  - 255) * t); // 255 → 22
+    } else {
+      const t = (intensity - 0.5) / 0.5;
+      r = Math.round(132 + (22  - 132) * t); // 132 → 22
+      g = Math.round(204 + (101 - 204) * t); // 204 → 101
+      b = Math.round(22  + (52  - 22)  * t); // 22  → 52
+    }
     return `rgb(${r},${g},${b})`;
   }
 
@@ -34,9 +46,9 @@ function PhilippinesMap({ data = {} }: Props) {
     <div className="w-full relative select-none">
       <ComposableMap
         projection="geoMercator"
-        projectionConfig={{ center: [122, 12], scale: 1600 }}
-        width={600}
-        height={700}
+        projectionConfig={{ center: [122, 12], scale: 2200 }}
+        width={500}
+        height={720}
         style={{ width: "100%", height: "auto" }}
       >
         <Geographies geography={GEO_URL}>

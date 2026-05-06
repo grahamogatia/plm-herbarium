@@ -641,7 +641,7 @@ function StatisticsPage() {
             {/* Legend */}
             <div className="flex items-center gap-2 mt-2 justify-center">
               <span className="text-xs text-zinc-400">0</span>
-              <div className="h-2 w-32 rounded-full" style={{ background: "linear-gradient(to right, #a4e481, #4d7c0f)" }} />
+              <div className="h-2 w-32 rounded-full border border-zinc-200" style={{ background: "linear-gradient(to right, #ffffff, #84cc16, #166534)" }} />
               <span className="text-xs text-zinc-400">max</span>
             </div>
           </CardContent>
