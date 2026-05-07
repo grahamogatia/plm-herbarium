@@ -66,7 +66,7 @@ function Collection() {
     dateFrom: "",
     dateTo: "",
   });
-  const [sort, setSort] = useState<SortOption | null>(null);
+  const [sort, setSort] = useState<SortOption | null>({ field: "accessionNo", direction: "asc" });
   const [viewMode, setViewMode] = useState<"table" | "gallery">("table");
   const [rowCount, setRowCount] = useState<RowCount>(2);
   const [deleteToastAccessionNo, setDeleteToastAccessionNo] = useState<string | null>(null);
@@ -115,6 +115,9 @@ function Collection() {
         else if (sort.field === "collector") { aVal = a.collector; bVal = b.collector; }
         else if (sort.field === "date") { aVal = a.date; bVal = b.date; }
         else if (sort.field === "accessionNo") { aVal = a.accessionNo; bVal = b.accessionNo; }
+        // Push empty values to the end regardless of sort direction
+        if (!aVal && bVal) return 1;
+        if (aVal && !bVal) return -1;
         const cmp = aVal.localeCompare(bVal);
         return sort.direction === "asc" ? cmp : -cmp;
       });
